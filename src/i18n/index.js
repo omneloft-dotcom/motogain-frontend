@@ -1,9 +1,9 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
-// Import translation files from mobile (source of truth)
-import tr from "../../../cordy-mobile/src/i18n/locales/tr.json";
-import en from "../../../cordy-mobile/src/i18n/locales/en.json";
+// Import translation files from web locale files
+import tr from "./locales/tr.json";
+import en from "./locales/en.json";
 
 const resources = {
   tr: {
