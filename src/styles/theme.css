@@ -1,0 +1,72 @@
+/**
+ * CORDY DESIGN SYSTEM — LOCKED TOKENS
+ * Do not modify without design approval
+ */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     BACKGROUND SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+  --color-background: #0E1110;
+
+  /* ═══════════════════════════════════════════════════════════
+     CARD SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+  --color-card: #151917;
+  --color-card-hover: #1B211E;
+  --color-border: #242B28;
+
+  /* ═══════════════════════════════════════════════════════════
+     PRIMARY / ACTION (Use sparingly)
+     ═══════════════════════════════════════════════════════════ */
+  --color-primary: #1FAF73;
+  --color-primary-dark: #157A52;
+  --color-highlight: #36E39A;
+
+  /* ═══════════════════════════════════════════════════════════
+     TEXT SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+  --color-text-primary: #E6ECE9;
+  --color-text-secondary: #A7B3AD;
+  --color-text-muted: #6F7C76;
+
+  /* ═══════════════════════════════════════════════════════════
+     FUNCTIONAL COLORS
+     ═══════════════════════════════════════════════════════════ */
+  --color-error: #D94A4A;
+  --color-warning: #D6A84A;
+  --color-info: #4A90D9;
+  --color-success: var(--color-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL RESETS
+   ═══════════════════════════════════════════════════════════ */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+/* Prevent any white backgrounds */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-background);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-card-hover);
+}

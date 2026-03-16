@@ -1,0 +1,35 @@
+export const PART_CATEGORIES = [
+  "Debriyaj",
+  "Egzoz",
+  "Elektrik",
+  "Fren",
+  "Grenaj",
+  "Havalandırma",
+  "Motor",
+  "Süspansiyon",
+  "Şanzıman",
+  "Yağlama",
+  "Yakıt Sistemi",
+  "Yönlendirme",
+  "Jant",
+  "Lastik",
+  "OTHER",
+];
+
+export const PART_SUBCATEGORY_MAP = {
+  Debriyaj: ["Balata", "Disk", "Hidrolik", "Tel", "Set", "OTHER"],
+  Egzoz: ["Manifold", "Ara Boru", "Son Susturucu", "Askı", "OTHER"],
+  Elektrik: ["Akü", "Regülatör", "Stator", "Beyin/ECU", "Far", "Sinyal", "Kablo", "OTHER"],
+  Fren: ["Balata", "Disk", "Merkez", "Hortum", "Kaliper", "ABS Modülü", "OTHER"],
+  Grenaj: ["Kaporta", "Cam", "Korumalar", "Sticker/Trim", "OTHER"],
+  Havalandırma: ["Radyatör", "Fan", "Termostat", "Hortum", "OTHER"],
+  Motor: ["Piston", "Silindir", "Krank", "Eksantrik", "Supap", "Conta", "Yağ Pompası", "OTHER"],
+  Süspansiyon: ["Amortisör Ön", "Amortisör Arka", "Yay", "Salıncak", "Burç/Rulman", "OTHER"],
+  Şanzıman: ["Dişli", "Zincir", "Aktarma Seti", "Debriyaj Sepeti", "OTHER"],
+  Yağlama: ["Filtre", "Pompa", "Soğutucu", "Hortum", "OTHER"],
+  "Yakıt Sistemi": ["Enjektör", "Karburatör", "Pompa", "Hortum", "Depo", "OTHER"],
+  Yönlendirme: ["Gidon", "Kumanda Kolları", "Gidon Boğazı", "Kilit", "OTHER"],
+  Jant: ["Ön Jant", "Arka Jant", "Rulman", "Teller/Çember", "OTHER"],
+  Lastik: ["Ön", "Arka", "Çift Set", "OTHER"],
+};
+

@@ -1,0 +1,68 @@
+import { useEffect, useState } from "react";
+import listingsApi from "../../api/listingsApi";
+import ListingsGrid from "../../components/listings/ListingsGrid";
+import ListingList from "../../components/listings/ListingList";
+import { useAuth } from "../../context/AuthProvider";
+
+export default function ListingsPage() {
+  const [listings, setListings] = useState([]);
+  const [view, setView] = useState("grid");
+  const [loading, setLoading] = useState(true);
+
+  const { favorites, toggleFavorite } = useAuth();
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const data = await listingsApi.getListings();
+        setListings(data);
+      } catch (err) {
+        console.error("İlanlar çekilemedi:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Tüm İlanlar</h1>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("grid")}
+            className={`btn-${view === "grid" ? "primary" : "normal"}`}
+          >
+            Grid
+          </button>
+
+          <button
+            onClick={() => setView("list")}
+            className={`btn-${view === "list" ? "primary" : "normal"}`}
+          >
+            Liste
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div>Yükleniyor...</div>
+      ) : view === "grid" ? (
+        <ListingsGrid
+          listings={listings}
+          favorites={favorites}
+          onToggle={toggleFavorite}
+        />
+      ) : (
+        <ListingList
+          listings={listings}
+          favorites={favorites}
+          onToggle={toggleFavorite}
+        />
+      )}
+    </div>
+  );
+}
