@@ -1,9 +1,13 @@
 import { io } from "socket.io-client";
+import { config } from "../config/env";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-const isDevelopment = import.meta.env.MODE === "development";
+// Use centralized config (production-safe, validated)
+const SOCKET_URL = config.socketUrl;
+const isDevelopment = config.isDevelopment;
 
 let socket = null;
+let reconnectAttemptCount = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 // Dev-only logging
 const log = (...args) => {
@@ -12,6 +16,31 @@ const log = (...args) => {
 
 const logError = (...args) => {
   if (isDevelopment) console.error(...args);
+};
+
+// Validate socket URL before connecting
+const isValidSocketUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+
+  // Reject localhost in production
+  if (config.isProduction && url.includes('localhost')) {
+    console.error('[Socket] Invalid URL: localhost detected in production build');
+    return false;
+  }
+
+  // Reject malformed URLs (double protocol)
+  if (url.match(/^https?:\/\/https?:\/\//)) {
+    console.error('[Socket] Invalid URL: malformed double protocol detected');
+    return false;
+  }
+
+  // Reject empty or placeholder URLs
+  if (url.trim() === '' || url.includes('undefined') || url.includes('null')) {
+    console.error('[Socket] Invalid URL: empty or placeholder value');
+    return false;
+  }
+
+  return true;
 };
 
 export const initializeSocket = (token) => {
@@ -25,6 +54,12 @@ export const initializeSocket = (token) => {
     return null;
   }
 
+  // Validate socket URL before attempting connection
+  if (!isValidSocketUrl(SOCKET_URL)) {
+    console.error("❌ Socket initialization failed: Invalid socket URL", SOCKET_URL);
+    return null;
+  }
+
   socket = io(SOCKET_URL, {
     auth: {
       token,
@@ -32,16 +67,26 @@ export const initializeSocket = (token) => {
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
-    reconnectionAttempts: Infinity,
+    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS, // 🔥 FIX: Limit reconnection attempts (was Infinity)
   });
 
   socket.on("connect", () => {
+    reconnectAttemptCount = 0; // Reset counter on successful connection
     log("✅ Socket connected:", socket.id);
   });
 
   socket.on("connect_error", (error) => {
-    logError("❌ Socket connection error:", error.message);
-    // Silent fallback - polling will continue to work
+    reconnectAttemptCount++;
+    logError(`❌ Socket connection error (attempt ${reconnectAttemptCount}/${MAX_RECONNECT_ATTEMPTS}):`, error.message);
+
+    // After max attempts, stop trying and disconnect
+    if (reconnectAttemptCount >= MAX_RECONNECT_ATTEMPTS) {
+      logError(`❌ Socket failed after ${MAX_RECONNECT_ATTEMPTS} attempts. Giving up. App will use polling fallback.`);
+      if (socket) {
+        socket.disconnect();
+        // Note: Socket will remain disconnected. App should degrade to polling.
+      }
+    }
   });
 
   socket.on("disconnect", (reason) => {
@@ -50,6 +95,7 @@ export const initializeSocket = (token) => {
   });
 
   socket.on("reconnect", (attemptNumber) => {
+    reconnectAttemptCount = 0; // Reset counter on successful reconnect
     log("🔄 Socket reconnected after", attemptNumber, "attempts");
   });
 

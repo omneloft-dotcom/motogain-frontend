@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthProvider";
 import { Icon } from "@/ui/icons/Icon";
 
 export default function UserDropdown({ user }) {
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -17,9 +17,9 @@ export default function UserDropdown({ user }) {
   );
 
   const roleLabel = useMemo(() => {
-    if (user?.role === "admin" || user?.role === "superadmin") return "admin";
+    if (isAdmin) return "admin";
     return user?.role || "user";
-  }, [user?.role]);
+  }, [isAdmin, user?.role]);
 
   // Close on route change
   useEffect(() => {
@@ -84,10 +84,9 @@ export default function UserDropdown({ user }) {
     { label: "Profilim", to: "/profile" },
   ];
 
-  const adminItems =
-    user?.role === "admin" || user?.role === "superadmin"
-      ? [{ label: "Admin Paneli", to: "/admin/dashboard" }]
-      : [];
+  const adminItems = isAdmin
+    ? [{ label: "Admin Paneli", to: "/admin/dashboard" }]
+    : [];
 
   const baseMenuItemClass =
     "flex items-center justify-between w-full px-3 py-3 text-sm text-slate-800 hover:bg-slate-50 rounded-lg transition-colors min-h-[44px]";

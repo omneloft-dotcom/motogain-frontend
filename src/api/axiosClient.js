@@ -1,9 +1,10 @@
 import axios from "axios";
 import { logError } from "../utils/errorHandler";
+import { config } from "../config/env";
 
 const getBaseURL = () => {
-  const url = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  return url.replace(/\/api\/?$/, "") + "/api/v1";
+  // Use centralized config (production-safe, validated)
+  return config.apiUrl + "/api/v1";
 };
 
 const axiosClient = axios.create({

@@ -6,19 +6,19 @@ const authApi = {
       email,
       password,
     });
-    return data; // { token, user }
+    return data.data || data;
   },
 
   async googleLogin({ idToken }) {
     const { data } = await axiosClient.post("/auth/google", {
       idToken,
     });
-    return data; // { accessToken, refreshToken, user }
+    return data.data || data;
   },
 
   async getMe() {
     const { data } = await axiosClient.get("/auth/me");
-    return data;
+    return data.data || data;
   },
 
   async forgotPassword(email) {

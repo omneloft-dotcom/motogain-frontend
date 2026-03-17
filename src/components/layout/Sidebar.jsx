@@ -99,7 +99,7 @@ const navLinkClass = ({ isActive }) =>
   ].join(" ");
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { socket } = useSocket();
   const location = useLocation();
   const { t } = useTranslation();
@@ -158,28 +158,28 @@ export default function Sidebar() {
     setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }));
   };
 
-  const adminGroups =
-    user && (user.role === "admin" || user.role === "superadmin")
-      ? [
-          {
-            titleKey: "navigation.admin",
-            defaultOpen: true,
-            items: [
-              { label: "admin.dashboard", to: "/admin/dashboard" },
-              { label: "admin.pendingListings", to: "/admin/pending-listings" },
-              { label: "admin.listingDetail", to: "/admin/listings" },
-              { label: "admin.users", to: "/admin/users" },
-              { label: "admin.banManagement", to: "/admin/bans" },
-              { label: "admin.reports", to: "/admin/reports" },
-              { label: "admin.newsSources", to: "/admin/news-sources" },
-              { label: "Haber Yönetimi", to: "/admin/news" },
-              { label: "Kampanyalar", to: "/admin/campaigns" },
-              { label: "Kampanya Başvuruları", to: "/admin/campaign-leads" },
-              { label: "Bildirim Merkezi", to: "/admin/push-broadcast" },
-            ],
-          },
-        ]
-      : [];
+  // Use centralized isAdmin from AuthProvider (production-safe)
+  const adminGroups = isAdmin
+    ? [
+        {
+          titleKey: "navigation.admin",
+          defaultOpen: true,
+          items: [
+            { label: "admin.dashboard", to: "/admin/dashboard" },
+            { label: "admin.pendingListings", to: "/admin/pending-listings" },
+            { label: "admin.listingDetail", to: "/admin/listings" },
+            { label: "admin.users", to: "/admin/users" },
+            { label: "admin.banManagement", to: "/admin/bans" },
+            { label: "admin.reports", to: "/admin/reports" },
+            { label: "admin.newsSources", to: "/admin/news-sources" },
+            { label: "Haber Yönetimi", to: "/admin/news" },
+            { label: "Kampanyalar", to: "/admin/campaigns" },
+            { label: "Kampanya Başvuruları", to: "/admin/campaign-leads" },
+            { label: "Bildirim Merkezi", to: "/admin/push-broadcast" },
+          ],
+        },
+      ]
+    : [];
 
   useEffect(() => {
     if (adminGroups.length) {

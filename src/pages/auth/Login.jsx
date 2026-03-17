@@ -40,10 +40,11 @@ export default function Login() {
   };
 
   useEffect(() => {
+    // Use centralized config (production-safe, validated)
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
     // Graceful degradation: hide Google section if not configured
-    if (!clientId) {
+    if (!clientId || clientId.trim() === '' || clientId.includes('your-google-client-id')) {
       setShowGoogleSection(false);
       return;
     }

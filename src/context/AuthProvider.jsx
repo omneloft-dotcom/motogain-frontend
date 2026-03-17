@@ -77,14 +77,12 @@ export default function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await authApi.login({ email, password });
 
-    // Backend response: { success: true, data: { accessToken, refreshToken, user } }
     const authData = {
-      accessToken: res.data?.accessToken || res.token || res.accessToken,
-      refreshToken: res.data?.refreshToken || res.refreshToken,
-      user: res.data?.user || res.user,
+      accessToken: res.accessToken,
+      refreshToken: res.refreshToken,
+      user: res.user,
     };
 
-    // Store complete auth object in single "auth" key
     localStorage.setItem("auth", JSON.stringify(authData));
     setToken(authData.accessToken);
     setUser(authData.user);
@@ -100,14 +98,12 @@ export default function AuthProvider({ children }) {
   const googleLogin = async (idToken) => {
     const res = await authApi.googleLogin({ idToken });
 
-    // Backend response: { success: true, data: { accessToken, refreshToken, user } }
     const authData = {
-      accessToken: res.data?.accessToken || res.accessToken,
-      refreshToken: res.data?.refreshToken || res.refreshToken,
-      user: res.data?.user || res.user,
+      accessToken: res.accessToken,
+      refreshToken: res.refreshToken,
+      user: res.user,
     };
 
-    // Store complete auth object in single "auth" key
     localStorage.setItem("auth", JSON.stringify(authData));
     setToken(authData.accessToken);
     setUser(authData.user);

@@ -22,7 +22,7 @@ import TargetFavoriteIcon from "../../components/icons/TargetFavoriteIcon";
  */
 
 export default function Dashboard() {
-  const { user, favorites } = useAuth();
+  const { user, favorites, isAdmin } = useAuth();
   const { socket } = useSocket();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
@@ -91,8 +91,6 @@ export default function Dashboard() {
   };
 
   if (!user) return null;
-
-  const isAdmin = user.role === "admin" || user.role === "superadmin";
 
   // Loading state
   if (loading || !summary) {
