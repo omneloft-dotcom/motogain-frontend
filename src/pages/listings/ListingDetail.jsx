@@ -5,7 +5,10 @@ import listingsApi from "../../api/listingsApi";
 import conversationsApi from "../../api/conversationsApi";
 import matchingsApi from "../../api/matchingsApi";
 import messagesApi from "../../api/messagesApi";
+import reportsApi from "../../api/reportsApi";
+import blocksApi from "../../api/blocksApi";
 import { useAuth } from "../../context/AuthProvider";
+import { useToast } from "../../context/ToastContext";
 import ImageSwipeCarousel from "../../components/listings/ImageSwipeCarousel";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { formatPriceFull } from "../../components/listings/ListingCard";
@@ -16,6 +19,7 @@ export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin, favorites, toggleFavorite } = useAuth();
+  const { showToast } = useToast();
 
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +152,54 @@ export default function ListingDetail() {
     } catch (err) {
       console.error("Conversation start error:", err);
       setError("Mesaj başlatılamadı. Lütfen tekrar deneyin.");
+    }
+  };
+
+  // 🔒 MODERATION: Report listing
+  const handleReportListing = async () => {
+    if (!user) {
+      navigate("/login", { state: { redirect: `/listings/${id}` } });
+      return;
+    }
+    if (!listing || !listing._id) return;
+
+    const reason = prompt("Şikayet nedeni:\n(Spam, Yanıltıcı içerik, Uygunsuz içerik, vb.)");
+    if (!reason || reason.trim() === "") {
+      return; // User cancelled or empty reason
+    }
+
+    try {
+      await reportsApi.reportListing(listing._id, reason.trim());
+      showToast("Şikayetiniz alındı. İnceleme süreci başlatıldı.", { type: "success" });
+    } catch (err) {
+      console.error("Report listing error:", err);
+      showToast("Şikayet gönderilemedi. Lütfen tekrar deneyin.", { type: "error" });
+    }
+  };
+
+  // 🔒 MODERATION: Block user
+  const handleBlockUser = async () => {
+    if (!user) {
+      navigate("/login", { state: { redirect: `/listings/${id}` } });
+      return;
+    }
+    if (!sellerId) {
+      showToast("Kullanıcı bilgisi bulunamadı.", { type: "error" });
+      return;
+    }
+
+    const confirmed = confirm("Bu kullanıcıyı engellemek istiyor musunuz?\n\nEngelledikten sonra bu kullanıcının ilanlarını göremez ve size mesaj gönderemez.");
+    if (!confirmed) return;
+
+    try {
+      await blocksApi.blockUser(sellerId);
+      showToast("Kullanıcı engellendi.", { type: "success" });
+      // Optionally navigate away from blocked user's listing
+      setTimeout(() => navigate("/listings"), 1500);
+    } catch (err) {
+      console.error("Block user error:", err);
+      const message = err.response?.data?.message || "Kullanıcı engellenemedi. Lütfen tekrar deneyin.";
+      showToast(message, { type: "error" });
     }
   };
 
@@ -590,6 +642,24 @@ export default function ListingDetail() {
                   Ara
                 </a>
               ) : null}
+            </div>
+          )}
+
+          {/* 🔒 MODERATION ACTIONS (subtle, non-redesign) */}
+          {!isOwner && user && sellerId && (
+            <div className="mt-4 flex gap-4 border-t border-slate-100 pt-3 text-xs">
+              <button
+                onClick={handleReportListing}
+                className="text-slate-500 hover:text-red-600 transition-colors"
+              >
+                ⚠️ İlanı şikayet et
+              </button>
+              <button
+                onClick={handleBlockUser}
+                className="text-slate-500 hover:text-red-600 transition-colors"
+              >
+                🚫 Kullanıcıyı engelle
+              </button>
             </div>
           )}
         </section>

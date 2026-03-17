@@ -19,6 +19,16 @@ const axiosClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+// 🔒 SECURITY FIX: Prevent multiple simultaneous logout redirects during 401 storm
+let isHandlingLogout = false;
+
+// Helper to reset logout flag (safety mechanism in case redirect fails)
+const resetLogoutFlag = () => {
+  setTimeout(() => {
+    isHandlingLogout = false;
+  }, 5000); // Reset after 5s (redirect should complete well before this)
+};
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -82,13 +92,17 @@ axiosClient.interceptors.response.use(
 
     if (isAuthEndpoint && error.response?.status === 401) {
       // Auth endpoints fail → clear auth and redirect (only if not already on login)
-      const currentPath = window.location.pathname;
-      if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
-        console.warn("[axiosClient] Auth endpoint 401 - clearing session");
-        localStorage.removeItem("auth");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+      if (!isHandlingLogout) {
+        isHandlingLogout = true;
+        resetLogoutFlag(); // Safety reset in case redirect fails
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
+          console.warn("[axiosClient] Auth endpoint 401 - clearing session");
+          localStorage.removeItem("auth");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+        }
       }
       return Promise.reject(error);
     }
@@ -101,13 +115,19 @@ axiosClient.interceptors.response.use(
       processQueue(new Error('Session expired after refresh'), null);
       isRefreshing = false;
 
-      // Trigger logout (only if not already on login)
-      const currentPath = window.location.pathname;
-      if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
-        localStorage.removeItem("auth");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+      // 🔒 SECURITY FIX: Only trigger logout once, even if multiple 401s arrive
+      if (!isHandlingLogout) {
+        isHandlingLogout = true;
+        resetLogoutFlag(); // Safety reset in case redirect fails
+
+        // Trigger logout (only if not already on login)
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
+          localStorage.removeItem("auth");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+        }
       }
 
       return Promise.reject(error);
@@ -160,12 +180,16 @@ axiosClient.interceptors.response.use(
           processQueue(new Error('No refresh token'), null);
           isRefreshing = false;
 
-          const currentPath = window.location.pathname;
-          if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
-            localStorage.removeItem("auth");
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+          if (!isHandlingLogout) {
+            isHandlingLogout = true;
+            resetLogoutFlag(); // Safety reset in case redirect fails
+            const currentPath = window.location.pathname;
+            if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
+              localStorage.removeItem("auth");
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+            }
           }
 
           return Promise.reject(error);
@@ -224,12 +248,16 @@ axiosClient.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
 
-        const currentPath = window.location.pathname;
-        if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
-          localStorage.removeItem("auth");
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+        if (!isHandlingLogout) {
+          isHandlingLogout = true;
+          resetLogoutFlag(); // Safety reset in case redirect fails
+          const currentPath = window.location.pathname;
+          if (currentPath !== "/login" && !currentPath.startsWith("/auth/")) {
+            localStorage.removeItem("auth");
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
         }
 
         return Promise.reject(refreshError);

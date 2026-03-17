@@ -87,9 +87,16 @@ export default function AuthProvider({ children }) {
     setToken(authData.accessToken);
     setUser(authData.user);
 
-    const favs = await favoritesApi.getMyFavorites();
-    setFavoriteListings(favs || []);
-    setFavoriteIds(favs?.map((f) => f._id) || []);
+    // Load favorites (non-blocking)
+    try {
+      const favs = await favoritesApi.getMyFavorites();
+      setFavoriteListings(favs || []);
+      setFavoriteIds(favs?.map((f) => f.listingId || f._id) || []);
+    } catch (favErr) {
+      console.error("[AuthProvider] Failed to load favorites after login (non-fatal):", favErr.message);
+      setFavoriteListings([]);
+      setFavoriteIds([]);
+    }
 
     await registerDeviceIfPossible();
   };
@@ -108,9 +115,16 @@ export default function AuthProvider({ children }) {
     setToken(authData.accessToken);
     setUser(authData.user);
 
-    const favs = await favoritesApi.getMyFavorites();
-    setFavoriteListings(favs || []);
-    setFavoriteIds(favs?.map((f) => f._id) || []);
+    // Load favorites (non-blocking)
+    try {
+      const favs = await favoritesApi.getMyFavorites();
+      setFavoriteListings(favs || []);
+      setFavoriteIds(favs?.map((f) => f.listingId || f._id) || []);
+    } catch (favErr) {
+      console.error("[AuthProvider] Failed to load favorites after Google login (non-fatal):", favErr.message);
+      setFavoriteListings([]);
+      setFavoriteIds([]);
+    }
 
     await registerDeviceIfPossible();
   };
@@ -151,7 +165,7 @@ export default function AuthProvider({ children }) {
       await favoritesApi.toggleFavorite(listingId);
       const favs = await favoritesApi.getMyFavorites();
       setFavoriteListings(favs || []);
-      setFavoriteIds(favs?.map((f) => f._id) || []);
+      setFavoriteIds(favs?.map((f) => f.listingId || f._id) || []);
 
       // FAZ 18: Kullanıcıya geri bildirim için mesaj döndür
       return {
@@ -269,9 +283,17 @@ export default function AuthProvider({ children }) {
         storedAuth.user = merged;
         localStorage.setItem("auth", JSON.stringify(storedAuth));
 
-        const favs = await favoritesApi.getMyFavorites();
-        setFavoriteListings(favs || []);
-        setFavoriteIds(favs?.map((f) => f._id) || []);
+        // Load favorites (non-blocking - don't fail auth if favorites fail)
+        try {
+          const favs = await favoritesApi.getMyFavorites();
+          setFavoriteListings(favs || []);
+          setFavoriteIds(favs?.map((f) => f.listingId || f._id) || []);
+        } catch (favErr) {
+          console.error("[AuthProvider] Failed to load favorites (non-fatal):", favErr.message);
+          // Continue with empty favorites - don't break auth init
+          setFavoriteListings([]);
+          setFavoriteIds([]);
+        }
 
         if (!pushRegistered) {
           await registerDeviceIfPossible();

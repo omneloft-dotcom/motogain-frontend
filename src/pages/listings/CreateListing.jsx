@@ -805,11 +805,13 @@ const CreateListing = () => {
               }}
             >
               <option value="">Ana kategori seç</option>
-              {Object.keys(CATEGORY_TREE).map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {Object.keys(CATEGORY_TREE)
+                .filter((c) => c !== "Taşıtlar") // 🔒 Business rule: Taşıtlar locked for web
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
             </select>
             {errors.parentCategory && (
               <p className="text-error text-sm">{errors.parentCategory}</p>

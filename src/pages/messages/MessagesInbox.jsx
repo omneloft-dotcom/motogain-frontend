@@ -5,12 +5,14 @@ import { ConversationCardSkeleton } from "../../components/common/Skeleton";
 import EmptyState from "../../components/common/EmptyState";
 import PageShell from "../../components/layout/PageShell";
 import { useSocket } from "../../context/SocketProvider";
+import { useAuth } from "../../context/AuthProvider";
 import { getErrorMessage, logError } from "../../utils/errorHandler";
 
 export default function MessagesInbox() {
   const navigate = useNavigate();
   const location = useLocation();
   const { socket } = useSocket();
+  const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,7 +20,14 @@ export default function MessagesInbox() {
   // Extract active conversation ID from location if coming from /messages/:id
   const activeConversationId = location.state?.fromConversation || null;
 
+  // 🔒 SECURITY FIX: Only load/poll conversations when auth is ready and user exists
   useEffect(() => {
+    // Don't start polling if auth is still loading or no user
+    if (authLoading || !user) {
+      setLoading(false);
+      return;
+    }
+
     loadConversations();
 
     // Polling: refresh every 15 seconds for live updates (fallback)
@@ -27,7 +36,7 @@ export default function MessagesInbox() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [authLoading, user]);
 
   // Socket.IO real-time inbox updates
   useEffect(() => {
@@ -45,6 +54,12 @@ export default function MessagesInbox() {
   }, [socket]);
 
   const loadConversations = async (silent = false) => {
+    // 🔒 SECURITY FIX: Don't attempt to load if not authenticated
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       if (!silent) {
         setLoading(true);
