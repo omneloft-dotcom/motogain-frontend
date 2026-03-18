@@ -173,7 +173,8 @@ export default function ListingDetail() {
       showToast("Şikayetiniz alındı. İnceleme süreci başlatıldı.", { type: "success" });
     } catch (err) {
       console.error("Report listing error:", err);
-      showToast("Şikayet gönderilemedi. Lütfen tekrar deneyin.", { type: "error" });
+      const errorMsg = err.response?.data?.message || "Şikayet gönderilemedi. Lütfen tekrar deneyin.";
+      showToast(errorMsg, { type: "error" });
     }
   };
 
@@ -644,24 +645,6 @@ export default function ListingDetail() {
               ) : null}
             </div>
           )}
-
-          {/* 🔒 MODERATION ACTIONS (subtle, non-redesign) */}
-          {!isOwner && user && sellerId && (
-            <div className="mt-4 flex gap-4 border-t border-slate-100 pt-3 text-xs">
-              <button
-                onClick={handleReportListing}
-                className="text-slate-500 hover:text-red-600 transition-colors"
-              >
-                ⚠️ İlanı şikayet et
-              </button>
-              <button
-                onClick={handleBlockUser}
-                className="text-slate-500 hover:text-red-600 transition-colors"
-              >
-                🚫 Kullanıcıyı engelle
-              </button>
-            </div>
-          )}
         </section>
 
         <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -852,6 +835,28 @@ export default function ListingDetail() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 🔒 MODERATION ACTIONS - Bottom secondary actions (mobile-aligned) */}
+      {!isOwner && user && sellerId && listing && (
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+            <button
+              onClick={handleReportListing}
+              className="inline-flex items-center gap-1.5 hover:text-red-600 transition-colors"
+            >
+              <span>⚠️</span>
+              <span>İlanı şikayet et</span>
+            </button>
+            <button
+              onClick={handleBlockUser}
+              className="inline-flex items-center gap-1.5 hover:text-red-600 transition-colors"
+            >
+              <span>🚫</span>
+              <span>Kullanıcıyı engelle</span>
+            </button>
+          </div>
         </div>
       )}
 
