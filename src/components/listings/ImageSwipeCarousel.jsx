@@ -128,7 +128,7 @@ export default function ImageSwipeCarousel({ images = [] }) {
           <button
             type="button"
             onClick={() => setIsFullscreen(false)}
-            className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xl text-white transition hover:bg-white/20"
+            className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xl text-white transition hover:bg-white/20"
             aria-label="Tam ekran kapat"
           >
             ✕

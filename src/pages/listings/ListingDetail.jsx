@@ -46,6 +46,10 @@ export default function ListingDetail() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showReportUserModal, setShowReportUserModal] = useState(false);
 
+  // Block state (mobile parity)
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
   // FAZ 16: Matching Couriers Tab
   const [activeTab, setActiveTab] = useState("details");
   const [matchedCouriers, setMatchedCouriers] = useState([]);
@@ -68,6 +72,26 @@ export default function ListingDetail() {
 
     if (id) fetchListing();
   }, [id]);
+
+  // Load blocked state (mobile parity)
+  useEffect(() => {
+    const checkBlockedState = async () => {
+      if (!user || !sellerId || isOwner) {
+        setIsBlocked(false);
+        return;
+      }
+
+      try {
+        const result = await blocksApi.checkIfBlocked(sellerId);
+        setIsBlocked(result?.isBlocked || false);
+      } catch (err) {
+        console.error("Check blocked error:", err);
+        setIsBlocked(false);
+      }
+    };
+
+    checkBlockedState();
+  }, [user, sellerId, isOwner]);
 
   const handleMessageSeller = async () => {
     if (!user) {
@@ -192,7 +216,7 @@ export default function ListingDetail() {
     setShowReportUserModal(true);
   };
 
-  // 🔒 MODERATION: Block user
+  // 🔒 MODERATION: Block/Unblock user (mobile parity - stateful toggle)
   const handleBlockUser = async () => {
     if (!user) {
       navigate("/login", { state: { redirect: `/listings/${id}` } });
@@ -203,24 +227,47 @@ export default function ListingDetail() {
       return;
     }
 
-    const confirmed = confirm("Bu kullanıcıyı engellemek istiyor musunuz?\n\nEngelledikten sonra bu kullanıcının ilanlarını göremez ve size mesaj gönderemez.");
-    if (!confirmed) return;
+    // Toggle: unblock if already blocked, block if not
+    if (isBlocked) {
+      const confirmed = confirm("Bu kullanıcının engelini kaldırmak istiyor musunuz?");
+      if (!confirmed) return;
 
-    try {
-      await blocksApi.blockUser(sellerId);
-      showToast("Kullanıcı engellendi.", { type: "success" });
-      // Optionally navigate away from blocked user's listing
-      setTimeout(() => navigate("/listings"), 1500);
-    } catch (err) {
-      console.error("Block user error:", err);
-      // Handle duplicate block error
-      const errorCode = err.response?.data?.code;
-      const errorMsg = err.response?.data?.message;
+      setBlockLoading(true);
+      try {
+        await blocksApi.unblockUser(sellerId);
+        setIsBlocked(false);
+        showToast("Engel kaldırıldı.", { type: "success" });
+      } catch (err) {
+        console.error("Unblock user error:", err);
+        const errorMsg = err.response?.data?.message || "Engel kaldırılamadı.";
+        showToast(errorMsg, { type: "error" });
+      } finally {
+        setBlockLoading(false);
+      }
+    } else {
+      const confirmed = confirm("Bu kullanıcıyı engellemek istiyor musunuz?\n\nEngelledikten sonra bu kullanıcının ilanlarını göremez ve size mesaj gönderemez.");
+      if (!confirmed) return;
 
-      if (errorCode === "RESOURCE_ALREADY_EXISTS") {
-        showToast("Kullanıcı zaten engellenmiş.", { type: "info" });
-      } else {
-        showToast(errorMsg || "Kullanıcı engellenemedi. Lütfen tekrar deneyin.", { type: "error" });
+      setBlockLoading(true);
+      try {
+        await blocksApi.blockUser(sellerId);
+        setIsBlocked(true);
+        showToast("Kullanıcı engellendi.", { type: "success" });
+        setTimeout(() => navigate("/listings"), 1500);
+      } catch (err) {
+        console.error("Block user error:", err);
+        const errorCode = err.response?.data?.code;
+        const errorMsg = err.response?.data?.message;
+
+        if (errorCode === "RESOURCE_ALREADY_EXISTS") {
+          // Sync state if backend says already blocked
+          setIsBlocked(true);
+          showToast("Kullanıcı zaten engellenmiş.", { type: "info" });
+        } else {
+          showToast(errorMsg || "Kullanıcı engellenemedi. Lütfen tekrar deneyin.", { type: "error" });
+        }
+      } finally {
+        setBlockLoading(false);
       }
     }
   };
@@ -705,10 +752,15 @@ export default function ListingDetail() {
               </button>
               <button
                 onClick={handleBlockUser}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 transition-colors"
+                disabled={blockLoading}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span>🚫</span>
-                <span>Engelle</span>
+                {blockLoading ? (
+                  <span>⏳</span>
+                ) : (
+                  <span>🚫</span>
+                )}
+                <span>{blockLoading ? "İşleniyor..." : (isBlocked ? "Engeli Kaldır" : "Engelle")}</span>
               </button>
             </div>
           )}
