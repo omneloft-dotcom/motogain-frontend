@@ -855,6 +855,35 @@ export default function ListingDetail() {
         </div>
       )}
 
+      {/* Admin/Owner Metadata Section */}
+      {(isAdmin || isOwner) && listing && (
+        <section className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5 shadow-sm">
+          <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            📋 Teknik Detaylar {isAdmin && "(Admin)"}
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600">İlan ID:</span>
+              <code className="text-xs bg-white px-2 py-1 rounded border border-slate-200">{listing._id}</code>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600">Satıcı ID:</span>
+              <code className="text-xs bg-white px-2 py-1 rounded border border-slate-200">{sellerId || "—"}</code>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-600">Durum:</span>
+              <span className="text-xs font-medium">{listing.status || "—"}</span>
+            </div>
+            {listing.createdAt && (
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600">Oluşturulma:</span>
+                <span className="text-xs">{new Date(listing.createdAt).toLocaleString("tr-TR")}</span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {showOfferModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-md w-full p-6">

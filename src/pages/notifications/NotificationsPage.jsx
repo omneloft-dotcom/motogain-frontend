@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthProvider";
 import useNotificationCenter from "../../hooks/useNotificationCenter";
 import {
   resolveInAppBody,
@@ -21,6 +22,7 @@ const resolveTypeLabel = (type, t) => {
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const {
     items,
     unreadCount,
@@ -30,7 +32,7 @@ export default function NotificationsPage() {
     refresh,
     markOneAsRead,
     markAllAsRead,
-  } = useNotificationCenter({ limit: 100, enabled: true });
+  } = useNotificationCenter({ limit: 100, enabled: !!user });
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-6">

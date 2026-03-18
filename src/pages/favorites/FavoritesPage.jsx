@@ -77,13 +77,19 @@ export default function FavoritesPage() {
     );
   }
 
+  // Transform favorites API response to flat listing shape for ListingCard
+  const transformedListings = favoriteListings.map((fav) => ({
+    ...fav.listing,
+    images: fav.images || fav.listing?.images || [],
+  }));
+
   return (
     <PageShell
       title="Favorilerim"
       description={`${favoriteListings.length} favori ilanın var`}
     >
       <ListingsGrid
-        listings={favoriteListings}
+        listings={transformedListings}
         favorites={favorites}
         onToggle={handleToggleFavorite}
       />

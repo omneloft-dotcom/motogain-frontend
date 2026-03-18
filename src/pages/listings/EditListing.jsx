@@ -961,11 +961,13 @@ export default function EditListing() {
               }}
             >
               <option value="">Ana kategori seç</option>
-              {Object.keys(CATEGORY_TREE).map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              {Object.keys(CATEGORY_TREE)
+                .filter((c) => c !== "Taşıtlar") // 🔒 Business rule: Taşıtlar locked for web
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
             </select>
             {errors.parentCategory && (
               <p className="text-red-600 text-sm">{errors.parentCategory}</p>
