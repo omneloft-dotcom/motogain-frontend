@@ -178,6 +178,32 @@ export default function ListingDetail() {
     }
   };
 
+  // 🔒 MODERATION: Report user (mobile parity)
+  const handleReportUser = async () => {
+    if (!user) {
+      navigate("/login", { state: { redirect: `/listings/${id}` } });
+      return;
+    }
+    if (!sellerId) {
+      showToast("Kullanıcı bilgisi bulunamadı.", { type: "error" });
+      return;
+    }
+
+    const reason = prompt("Kullanıcıyı bildirme nedeni:\n(Spam, Taciz, Dolandırıcılık, vb.)");
+    if (!reason || reason.trim() === "") {
+      return; // User cancelled or empty reason
+    }
+
+    try {
+      await reportsApi.reportUser(sellerId, reason.trim());
+      showToast("Kullanıcı bildiriminiz alındı. Teşekkürler.", { type: "success" });
+    } catch (err) {
+      console.error("Report user error:", err);
+      const errorMsg = err.response?.data?.message || "Kullanıcı bildirimi gönderilemedi.";
+      showToast(errorMsg, { type: "error" });
+    }
+  };
+
   // 🔒 MODERATION: Block user
   const handleBlockUser = async () => {
     if (!user) {
@@ -645,6 +671,26 @@ export default function ListingDetail() {
               ) : null}
             </div>
           )}
+
+          {/* 🔒 USER MODERATION ACTIONS (mobile parity: seller section) */}
+          {!isOwner && user && sellerId && (
+            <div className="mt-4 flex gap-3 border-t border-slate-100 pt-3">
+              <button
+                onClick={handleReportUser}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 transition-colors"
+              >
+                <span>⚠️</span>
+                <span>Kullanıcıyı Bildir</span>
+              </button>
+              <button
+                onClick={handleBlockUser}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 transition-colors"
+              >
+                <span>🚫</span>
+                <span>Engelle</span>
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -838,26 +884,21 @@ export default function ListingDetail() {
         </div>
       )}
 
-      {/* 🔒 MODERATION ACTIONS - Bottom secondary actions (mobile-aligned) */}
-      {!isOwner && user && sellerId && listing && (
-        <div className="mt-6 pt-4 border-t border-slate-100">
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-            <button
-              onClick={handleReportListing}
-              className="inline-flex items-center gap-1.5 hover:text-red-600 transition-colors"
-            >
-              <span>⚠️</span>
-              <span>İlanı şikayet et</span>
-            </button>
-            <button
-              onClick={handleBlockUser}
-              className="inline-flex items-center gap-1.5 hover:text-red-600 transition-colors"
-            >
-              <span>🚫</span>
-              <span>Kullanıcıyı engelle</span>
-            </button>
-          </div>
-        </div>
+      {/* 🔒 LISTING REPORT SECTION (mobile parity: separate bottom card) */}
+      {!isOwner && listing && (
+        <section className="mt-6 rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900 mb-2">İlanı Bildir</h3>
+          <p className="text-xs text-slate-600 mb-3">
+            Bu ilanda yanıltıcı, uygunsuz veya şüpheli bir durum görüyorsanız bildirebilirsiniz.
+          </p>
+          <button
+            onClick={handleReportListing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+          >
+            <span>⚠️</span>
+            <span>Bildir</span>
+          </button>
+        </section>
       )}
 
       {/* Admin/Owner Metadata Section */}
