@@ -73,26 +73,6 @@ export default function ListingDetail() {
     if (id) fetchListing();
   }, [id]);
 
-  // Load blocked state (mobile parity)
-  useEffect(() => {
-    const checkBlockedState = async () => {
-      if (!user || !sellerId || isOwner) {
-        setIsBlocked(false);
-        return;
-      }
-
-      try {
-        const result = await blocksApi.checkIfBlocked(sellerId);
-        setIsBlocked(result?.isBlocked || false);
-      } catch (err) {
-        console.error("Check blocked error:", err);
-        setIsBlocked(false);
-      }
-    };
-
-    checkBlockedState();
-  }, [user, sellerId, isOwner]);
-
   const handleMessageSeller = async () => {
     if (!user) {
       navigate("/login", { state: { redirect: `/listings/${id}` } });
@@ -369,6 +349,26 @@ export default function ListingDetail() {
   const sellerId = normalizeId(listing?.createdBy?._id || listing?.createdBy || listing?.sellerId || listing?.ownerId);
   const isOwner = Boolean(userId && ownerId && userId === ownerId);
   const canonicalListingUrl = `https://cordy.app/listings/${id || listingCanonicalId}`;
+
+  // Load blocked state (mobile parity) - MUST be after sellerId/isOwner declarations
+  useEffect(() => {
+    const checkBlockedState = async () => {
+      if (!user || !sellerId || isOwner) {
+        setIsBlocked(false);
+        return;
+      }
+
+      try {
+        const result = await blocksApi.checkIfBlocked(sellerId);
+        setIsBlocked(result?.isBlocked || false);
+      } catch (err) {
+        console.error("Check blocked error:", err);
+        setIsBlocked(false);
+      }
+    };
+
+    checkBlockedState();
+  }, [user, sellerId, isOwner]);
 
   const favFromContext = useMemo(() => {
     if (!listingCanonicalId || !Array.isArray(favorites)) return false;
