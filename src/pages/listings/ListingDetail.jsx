@@ -15,6 +15,16 @@ import { formatPriceFull } from "../../components/listings/ListingCard";
 import { isPromotionsEnabled } from "../../utils/isPromotionsEnabled";
 import TargetFavoriteIcon from "../../components/icons/TargetFavoriteIcon";
 
+// Report reason enums (backend validation)
+const REPORT_REASONS = [
+  { value: "SPAM", label: "Spam / Reklam" },
+  { value: "SCAM", label: "Dolandırıcılık" },
+  { value: "INAPPROPRIATE", label: "Uygunsuz içerik" },
+  { value: "MISLEADING", label: "Yanıltıcı bilgi" },
+  { value: "DUPLICATE", label: "Tekrar eden ilan" },
+  { value: "OTHER", label: "Diğer" }
+];
+
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -31,6 +41,10 @@ export default function ListingDetail() {
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [shareFeedback, setShareFeedback] = useState("");
   const [optimisticFav, setOptimisticFav] = useState(null);
+
+  // Report modals
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showReportUserModal, setShowReportUserModal] = useState(false);
 
   // FAZ 16: Matching Couriers Tab
   const [activeTab, setActiveTab] = useState("details");
@@ -156,30 +170,17 @@ export default function ListingDetail() {
   };
 
   // 🔒 MODERATION: Report listing
-  const handleReportListing = async () => {
+  const handleReportListing = () => {
     if (!user) {
       navigate("/login", { state: { redirect: `/listings/${id}` } });
       return;
     }
     if (!listing || !listing._id) return;
-
-    const reason = prompt("Şikayet nedeni:\n(Spam, Yanıltıcı içerik, Uygunsuz içerik, vb.)");
-    if (!reason || reason.trim() === "") {
-      return; // User cancelled or empty reason
-    }
-
-    try {
-      await reportsApi.reportListing(listing._id, reason.trim());
-      showToast("Şikayetiniz alındı. İnceleme süreci başlatıldı.", { type: "success" });
-    } catch (err) {
-      console.error("Report listing error:", err);
-      const errorMsg = err.response?.data?.message || "Şikayet gönderilemedi. Lütfen tekrar deneyin.";
-      showToast(errorMsg, { type: "error" });
-    }
+    setShowReportModal(true);
   };
 
   // 🔒 MODERATION: Report user (mobile parity)
-  const handleReportUser = async () => {
+  const handleReportUser = () => {
     if (!user) {
       navigate("/login", { state: { redirect: `/listings/${id}` } });
       return;
@@ -188,20 +189,7 @@ export default function ListingDetail() {
       showToast("Kullanıcı bilgisi bulunamadı.", { type: "error" });
       return;
     }
-
-    const reason = prompt("Kullanıcıyı bildirme nedeni:\n(Spam, Taciz, Dolandırıcılık, vb.)");
-    if (!reason || reason.trim() === "") {
-      return; // User cancelled or empty reason
-    }
-
-    try {
-      await reportsApi.reportUser(sellerId, reason.trim());
-      showToast("Kullanıcı bildiriminiz alındı. Teşekkürler.", { type: "success" });
-    } catch (err) {
-      console.error("Report user error:", err);
-      const errorMsg = err.response?.data?.message || "Kullanıcı bildirimi gönderilemedi.";
-      showToast(errorMsg, { type: "error" });
-    }
+    setShowReportUserModal(true);
   };
 
   // 🔒 MODERATION: Block user
@@ -225,8 +213,41 @@ export default function ListingDetail() {
       setTimeout(() => navigate("/listings"), 1500);
     } catch (err) {
       console.error("Block user error:", err);
-      const message = err.response?.data?.message || "Kullanıcı engellenemedi. Lütfen tekrar deneyin.";
-      showToast(message, { type: "error" });
+      // Handle duplicate block error
+      const errorCode = err.response?.data?.code;
+      const errorMsg = err.response?.data?.message;
+
+      if (errorCode === "RESOURCE_ALREADY_EXISTS") {
+        showToast("Kullanıcı zaten engellenmiş.", { type: "info" });
+      } else {
+        showToast(errorMsg || "Kullanıcı engellenemedi. Lütfen tekrar deneyin.", { type: "error" });
+      }
+    }
+  };
+
+  // 🔒 MODERATION: Submit listing report (from modal)
+  const handleSubmitListingReport = async (reason, details) => {
+    try {
+      await reportsApi.reportListing(listing._id, reason, details || null);
+      showToast("Şikayetiniz alındı. İnceleme süreci başlatıldı.", { type: "success" });
+      setShowReportModal(false);
+    } catch (err) {
+      console.error("Report listing error:", err);
+      const errorMsg = err.response?.data?.message || "Şikayet gönderilemedi. Lütfen tekrar deneyin.";
+      showToast(errorMsg, { type: "error" });
+    }
+  };
+
+  // 🔒 MODERATION: Submit user report (from modal)
+  const handleSubmitUserReport = async (reason, details) => {
+    try {
+      await reportsApi.reportUser(sellerId, reason, details || null);
+      showToast("Kullanıcı bildiriminiz alındı. Teşekkürler.", { type: "success" });
+      setShowReportUserModal(false);
+    } catch (err) {
+      console.error("Report user error:", err);
+      const errorMsg = err.response?.data?.message || "Kullanıcı bildirimi gönderilemedi.";
+      showToast(errorMsg, { type: "error" });
     }
   };
 
@@ -972,6 +993,98 @@ export default function ListingDetail() {
           </div>
         </div>
       )}
+
+      {/* Report Listing Modal */}
+      {showReportModal && (
+        <ReportModal
+          title="İlanı Bildir"
+          onClose={() => setShowReportModal(false)}
+          onSubmit={handleSubmitListingReport}
+        />
+      )}
+
+      {/* Report User Modal */}
+      {showReportUserModal && (
+        <ReportModal
+          title="Kullanıcıyı Bildir"
+          onClose={() => setShowReportUserModal(false)}
+          onSubmit={handleSubmitUserReport}
+        />
+      )}
+    </div>
+  );
+}
+
+// Report Modal Component (inline)
+function ReportModal({ title, onClose, onSubmit }) {
+  const [reason, setReason] = useState("");
+  const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!reason) {
+      alert("Lütfen bir sebep seçin.");
+      return;
+    }
+    setSubmitting(true);
+    await onSubmit(reason, details.trim() || null);
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-md w-full p-6">
+        <h3 className="text-xl font-bold mb-4">{title}</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sebep <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Seçiniz...</option>
+              {REPORT_REASONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Açıklama (İsteğe bağlı)
+            </label>
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows="3"
+              placeholder="Ek açıklama ekleyebilirsiniz..."
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 px-4 rounded-lg border-2 border-gray-200 hover:bg-gray-50"
+            >
+              İptal
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !reason}
+              className="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Gönderiliyor..." : "Gönder"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
