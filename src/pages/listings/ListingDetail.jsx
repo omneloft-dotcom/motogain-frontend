@@ -214,11 +214,21 @@ export default function ListingDetail() {
 
       setBlockLoading(true);
       try {
+        console.log("[UNBLOCK_DEBUG]", {
+          sellerId,
+          listingId: listing?._id,
+          listingCreatedBy: listing?.createdBy,
+          currentUserId: user?._id || user?.id,
+          isOwner,
+          isBlocked,
+        });
         await blocksApi.unblockUser(sellerId);
         setIsBlocked(false);
         showToast("Engel kaldırıldı.", { type: "success" });
       } catch (err) {
         console.error("Unblock user error:", err);
+        console.log("[UNBLOCK_ERROR_STATUS]", err?.response?.status);
+        console.log("[UNBLOCK_ERROR_RESPONSE]", err?.response?.data);
         const errorMsg = err.response?.data?.message || "Engel kaldırılamadı.";
         showToast(errorMsg, { type: "error" });
       } finally {
@@ -230,12 +240,22 @@ export default function ListingDetail() {
 
       setBlockLoading(true);
       try {
+        console.log("[BLOCK_DEBUG]", {
+          sellerId,
+          listingId: listing?._id,
+          listingCreatedBy: listing?.createdBy,
+          currentUserId: user?._id || user?.id,
+          isOwner,
+          isBlocked,
+        });
         await blocksApi.blockUser(sellerId);
         setIsBlocked(true);
         showToast("Kullanıcı engellendi.", { type: "success" });
         setTimeout(() => navigate("/listings"), 1500);
       } catch (err) {
         console.error("Block user error:", err);
+        console.log("[BLOCK_ERROR_STATUS]", err?.response?.status);
+        console.log("[BLOCK_ERROR_RESPONSE]", err?.response?.data);
         const errorCode = err.response?.data?.code;
         const errorMsg = err.response?.data?.message;
 
