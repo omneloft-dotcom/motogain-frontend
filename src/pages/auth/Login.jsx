@@ -11,6 +11,8 @@ export default function Login() {
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
+  const hasInitializedGoogle = useRef(false);
+  const hasRenderedButton = useRef(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,17 +54,17 @@ export default function Login() {
     // Show section immediately if clientId exists (fixes render deadlock)
     setShowGoogleSection(true);
 
-    let initialized = false;
     let timeoutId = null;
 
     // Wait for Google Identity Services script to load
     const initGoogle = () => {
-      if (!window.google?.accounts?.id || initialized) {
+      // Guard: prevent duplicate initialization
+      if (!window.google?.accounts?.id || hasInitializedGoogle.current) {
         return;
       }
 
       try {
-        initialized = true;
+        hasInitializedGoogle.current = true;
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: handleGoogleResponse,
@@ -70,14 +72,19 @@ export default function Login() {
 
         // Delay button render to ensure ref is mounted
         timeoutId = setTimeout(() => {
-          if (googleButtonRef.current) {
+          if (googleButtonRef.current && !hasRenderedButton.current) {
             try {
+              // Clear container before render (handles re-renders safely)
+              googleButtonRef.current.innerHTML = '';
+
               window.google.accounts.id.renderButton(googleButtonRef.current, {
                 theme: "outline",
                 size: "large",
                 text: "continue_with",
                 locale: "tr",
               });
+
+              hasRenderedButton.current = true;
             } catch (renderError) {
               // Silent fail - button area will remain empty
             }

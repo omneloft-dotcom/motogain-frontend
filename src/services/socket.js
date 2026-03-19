@@ -44,44 +44,61 @@ const isValidSocketUrl = (url) => {
 };
 
 export const initializeSocket = (token) => {
-  if (socket?.connected) {
-    log("✅ Socket already connected");
-    return socket;
+  // Singleton guard: prevent duplicate instances
+  if (socket) {
+    if (socket.connected) {
+      console.log("[SOCKET] already connected:", socket.id);
+      return socket;
+    }
+    // Clean up disconnected instance before creating new one
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
   }
 
   if (!token) {
-    logError("❌ Socket initialization failed: No token provided");
+    console.error("[SOCKET] initialization failed: No token provided");
     return null;
   }
 
   // Validate socket URL before attempting connection
   if (!isValidSocketUrl(SOCKET_URL)) {
-    console.error("❌ Socket initialization failed: Invalid socket URL", SOCKET_URL);
+    console.error("[SOCKET] initialization failed: Invalid socket URL", SOCKET_URL);
     return null;
   }
 
   socket = io(SOCKET_URL, {
+    path: "/socket.io/",
+    transports: ["websocket"],
+    withCredentials: true,
     auth: {
       token,
     },
     reconnection: true,
-    reconnectionDelay: 1000,
+    reconnectionDelay: 2000,
     reconnectionDelayMax: 5000,
-    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS, // 🔥 FIX: Limit reconnection attempts (was Infinity)
+    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+    timeout: 10000,
   });
+
+  // Prevent duplicate listeners
+  socket.off("connect");
+  socket.off("connect_error");
+  socket.off("disconnect");
+  socket.off("reconnect");
 
   socket.on("connect", () => {
     reconnectAttemptCount = 0; // Reset counter on successful connection
-    log("✅ Socket connected:", socket.id);
+    console.log("[SOCKET] connected:", socket.id);
   });
 
   socket.on("connect_error", (error) => {
     reconnectAttemptCount++;
-    logError(`❌ Socket connection error (attempt ${reconnectAttemptCount}/${MAX_RECONNECT_ATTEMPTS}):`, error.message);
+    console.error(`[SOCKET] connect_error (attempt ${reconnectAttemptCount}/${MAX_RECONNECT_ATTEMPTS}):`, error.message);
 
     // After max attempts, stop trying and disconnect
     if (reconnectAttemptCount >= MAX_RECONNECT_ATTEMPTS) {
-      logError(`❌ Socket failed after ${MAX_RECONNECT_ATTEMPTS} attempts. Giving up. App will use polling fallback.`);
+      console.error(`[SOCKET] max attempts reached. Disconnecting. App will use polling fallback.`);
       if (socket) {
         socket.disconnect();
         // Note: Socket will remain disconnected. App should degrade to polling.
@@ -90,13 +107,13 @@ export const initializeSocket = (token) => {
   });
 
   socket.on("disconnect", (reason) => {
-    log("❌ Socket disconnected:", reason);
+    console.warn("[SOCKET] disconnected:", reason);
     // No user notification - polling handles it
   });
 
   socket.on("reconnect", (attemptNumber) => {
     reconnectAttemptCount = 0; // Reset counter on successful reconnect
-    log("🔄 Socket reconnected after", attemptNumber, "attempts");
+    console.log("[SOCKET] reconnected after", attemptNumber, "attempts");
   });
 
   return socket;
