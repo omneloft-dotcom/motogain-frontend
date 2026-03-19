@@ -20,11 +20,8 @@ const ChatPage = () => {
   const [conversation, setConversation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
-  const [offerAmount, setOfferAmount] = useState("");
-  const [showOfferInput, setShowOfferInput] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
   const [sendingText, setSendingText] = useState(false);
-  const [sendingOffer, setSendingOffer] = useState(false);
 
   const typingTimeoutRef = useRef(null);
   const messageListRef = useRef(null);
@@ -291,37 +288,6 @@ const ChatPage = () => {
     }
   };
 
-  const handleSendOffer = async () => {
-    if (!offerAmount || offerAmount <= 0 || sendingOffer || sendInFlightRef.current) {
-      alert(t("offers.invalidAmount"));
-      return;
-    }
-
-    try {
-      setSendingOffer(true);
-      sendInFlightRef.current = true;
-      const payload = {
-        conversationId,
-        offerAmount: Number(offerAmount),
-      };
-
-      // Send offer via REST API
-      await messageApi.sendOffer(payload);
-
-      // ✅ DO NOT add to state here - offer will come via socket
-      // Socket event will handle UI update to prevent duplicates
-
-      setOfferAmount("");
-      setShowOfferInput(false);
-    } catch (err) {
-      console.error("Teklif gönderme hatası:", err);
-      alert(t("offers.sendError"));
-    } finally {
-      setSendingOffer(false);
-      sendInFlightRef.current = false;
-    }
-  };
-
   const handleOfferRespond = (result) => {
     return result;
   };
@@ -334,10 +300,6 @@ const ChatPage = () => {
     if (typeof id === "object" && id.id) return String(id.id);
     return String(id);
   };
-
-  // CRITICAL: Check if user is listing owner (cannot make offers on own listing)
-  const isOwnListing = conversation?.listing?.createdBy &&
-    normalizeId(conversation.listing.createdBy) === normalizeId(user?._id);
 
   // Determine listing status
   const listingStatus = conversation?.listing?.status;
@@ -429,71 +391,24 @@ const ChatPage = () => {
       )}
 
       {!isClosed ? (
-        <>
-          {!showOfferInput ? (
-            <div className="mt-4 flex flex-none items-end gap-2 rounded-2xl border border-border/60 bg-card p-3">
-              <input
-                type="text"
-                className="flex-1 rounded-xl border border-border bg-background p-3 text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-primary/60"
-                placeholder={t("messages.placeholder")}
-                value={text}
-                onChange={handleTextChange}
-                onKeyPress={(e) => e.key === "Enter" && handleSend()}
-              />
+        <div className="mt-4 flex flex-none items-end gap-2 rounded-2xl border border-border/60 bg-card p-3">
+          <input
+            type="text"
+            className="flex-1 rounded-xl border border-border bg-background p-3 text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-primary/60"
+            placeholder={t("messages.placeholder")}
+            value={text}
+            onChange={handleTextChange}
+            onKeyPress={(e) => e.key === "Enter" && handleSend()}
+          />
 
-              <button
-                onClick={handleSend}
-                disabled={!text.trim() || sendingText}
-                className={`rounded-xl px-4 py-3 font-semibold transition-colors ${text.trim() && !sendingText ? "bg-primary text-background hover:bg-highlight" : "border border-border bg-card text-text-secondary opacity-70"}`}
-              >
-                {sendingText ? t("common.loading") : t("common.submit")}
-              </button>
-
-              {!isOwnListing && (
-                <button
-                  onClick={() => setShowOfferInput(true)}
-                  className="rounded-xl border border-border bg-card px-4 py-3 text-text-secondary transition-colors hover:bg-card-hover hover:text-text-primary"
-                >
-                  💰 {t("offers.makeOffer")}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="mt-4 flex-none rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-text-secondary font-medium">{t("offers.offerAmount")}</span>
-                <input
-                  type="number"
-                  className="flex-1 rounded-lg border border-border bg-background p-2 text-text-primary outline-none transition-colors focus:border-primary/60"
-                  placeholder="0"
-                  value={offerAmount}
-                  onChange={(e) => setOfferAmount(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendOffer()}
-                />
-                <span className="text-text-secondary font-medium">₺</span>
-              </div>
-
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={handleSendOffer}
-                  disabled={sendingOffer}
-                  className="flex-1 rounded-lg bg-primary px-4 py-2 font-semibold text-background transition-colors hover:bg-highlight disabled:opacity-70"
-                >
-                  {sendingOffer ? t("common.loading") : `✓ ${t("offers.sendOffer")}`}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowOfferInput(false);
-                    setOfferAmount("");
-                  }}
-                  className="flex-1 rounded-lg border border-border bg-card px-4 py-2 text-text-secondary transition-colors hover:bg-card-hover hover:text-text-primary"
-                >
-                  {t("common.cancel")}
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sendingText}
+            className={`rounded-xl px-4 py-3 font-semibold transition-colors ${text.trim() && !sendingText ? "bg-primary text-background hover:bg-highlight" : "border border-border bg-card text-text-secondary opacity-70"}`}
+          >
+            {sendingText ? t("common.loading") : t("common.submit")}
+          </button>
+        </div>
       ) : (
         <div className="mt-4 flex-none rounded-2xl border border-border bg-card p-4 text-center text-text-secondary">
           {t("messages.listingClosed")}

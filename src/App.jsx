@@ -26,7 +26,6 @@ import MessagesInbox from "./pages/messages/MessagesInbox";
 import ChatPage from "./pages/messages/ChatPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import Announcements from "./pages/Announcements";
-import Offers from "./pages/Offers";
 import Club from "./pages/Club";
 import Settings from "./pages/Settings";
 import ProfileSettings from "./pages/ProfileSettings";
@@ -82,7 +81,8 @@ export default function App() {
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/news" element={<NewsUpdates />} />
-          <Route path="/offers" element={<Offers />} />
+          {/* WEB-ONLY: Offer creation disabled - mobile-only feature */}
+          {/* <Route path="/offers" element={<Offers />} /> */}
           <Route path="/club" element={<Club />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/kurye-rehberi" element={<CourierGuidePage />} />

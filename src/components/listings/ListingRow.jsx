@@ -55,9 +55,6 @@ const ListingRow = ({ listing }) => {
         <button className="text-text-secondary hover:text-primary flex items-center gap-1 transition-colors">
           <TargetFavoriteIcon isActive={false} size={16} /> Favori
         </button>
-        <button className="text-text-secondary hover:text-text-primary flex items-center gap-1 transition-colors">
-          💰 Teklif Ver
-        </button>
       </div>
     </div>
   );

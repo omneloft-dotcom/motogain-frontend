@@ -24,7 +24,6 @@ const groupsConfig = [
       { label: "listings.myListings", to: "/my-listings" },
       { label: "listings.favorites", to: "/favorites" },
       { label: "messages.title", to: "/messages" },
-      { label: "offers.myOffers", to: "/offers" },
       { label: "courier.title", to: "/courier-calendar" },
     ],
   },
