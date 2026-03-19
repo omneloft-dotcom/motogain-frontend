@@ -1,6 +1,7 @@
 import { useState } from "react";
 import DropdownFilter from "./DropdownFilter";
 import { ChevronDown } from "lucide-react";
+import { PARENT_CATEGORY_OPTIONS, isLockedParentCategory } from "../../constants/listingCategories";
 
 export default function FilterBar({ filters, setFilters }) {
   const [openKey, setOpenKey] = useState(null);
@@ -42,12 +43,7 @@ export default function FilterBar({ filters, setFilters }) {
 
         {openKey === "parentCategory" && (
           <DropdownFilter
-            options={[
-              "Taşıtlar",
-              "Ekipman",
-              "Yedek Parça",
-              "Aksesuar",
-            ]}
+            options={PARENT_CATEGORY_OPTIONS}
             onSelect={(parentCategory) =>
               setFilters({ ...filters, parentCategory, category: "" })
             }
@@ -70,7 +66,9 @@ export default function FilterBar({ filters, setFilters }) {
         {openKey === "category" && (
           <DropdownFilter
             options={
-              filters.parentCategory === "Taşıtlar"
+              isLockedParentCategory(filters.parentCategory)
+                ? []
+                : filters.parentCategory === "Taşıtlar"
                 ? ["Motosiklet", "Scooter"]
                 : filters.parentCategory === "Ekipman"
                 ? [

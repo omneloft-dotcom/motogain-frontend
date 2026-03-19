@@ -15,13 +15,22 @@ import { formatPriceFull } from "../../components/listings/ListingCard";
 import { isPromotionsEnabled } from "../../utils/isPromotionsEnabled";
 import TargetFavoriteIcon from "../../components/icons/TargetFavoriteIcon";
 
-// Report reason enums (backend validation)
-const REPORT_REASONS = [
+// Report reason enums (backend validation - MUST match backend models exactly)
+const LISTING_REPORT_REASONS = [
   { value: "SPAM", label: "Spam / Reklam" },
-  { value: "SCAM", label: "Dolandırıcılık" },
+  { value: "FRAUD", label: "Dolandırıcılık" },
   { value: "INAPPROPRIATE", label: "Uygunsuz içerik" },
-  { value: "MISLEADING", label: "Yanıltıcı bilgi" },
   { value: "DUPLICATE", label: "Tekrar eden ilan" },
+  { value: "WRONG_CATEGORY", label: "Yanlış kategori" },
+  { value: "OTHER", label: "Diğer" }
+];
+
+const USER_REPORT_REASONS = [
+  { value: "SPAM", label: "Spam" },
+  { value: "HARASSMENT", label: "Taciz / Rahatsız etme" },
+  { value: "FRAUD", label: "Dolandırıcılık" },
+  { value: "INAPPROPRIATE_CONTENT", label: "Uygunsuz içerik" },
+  { value: "FAKE_ACCOUNT", label: "Sahte hesap" },
   { value: "OTHER", label: "Diğer" }
 ];
 
@@ -229,7 +238,8 @@ export default function ListingDetail() {
         console.error("Unblock user error:", err);
         console.log("[UNBLOCK_ERROR_STATUS]", err?.response?.status);
         console.log("[UNBLOCK_ERROR_RESPONSE]", err?.response?.data);
-        const errorMsg = err.response?.data?.message || "Engel kaldırılamadı.";
+        // Backend error format: { success: false, error: { code, message }, meta: {...} }
+        const errorMsg = err.response?.data?.error?.message || "Engel kaldırılamadı.";
         showToast(errorMsg, { type: "error" });
       } finally {
         setBlockLoading(false);
@@ -256,8 +266,9 @@ export default function ListingDetail() {
         console.error("Block user error:", err);
         console.log("[BLOCK_ERROR_STATUS]", err?.response?.status);
         console.log("[BLOCK_ERROR_RESPONSE]", err?.response?.data);
-        const errorCode = err.response?.data?.code;
-        const errorMsg = err.response?.data?.message;
+        // Backend error format: { success: false, error: { code, message }, meta: {...} }
+        const errorCode = err.response?.data?.error?.code;
+        const errorMsg = err.response?.data?.error?.message;
 
         if (errorCode === "RESOURCE_ALREADY_EXISTS") {
           // Sync state if backend says already blocked
@@ -368,7 +379,7 @@ export default function ListingDetail() {
   const ownerId = normalizeId(listing?.createdBy?._id || listing?.createdBy || listing?.sellerId || listing?.ownerId);
   const sellerId = normalizeId(listing?.createdBy?._id || listing?.createdBy || listing?.sellerId || listing?.ownerId);
   const isOwner = Boolean(userId && ownerId && userId === ownerId);
-  const canonicalListingUrl = `https://cordy.app/listings/${id || listingCanonicalId}`;
+  const canonicalListingUrl = `https://usecordy.com/listings/${id || listingCanonicalId}`;
 
   // Load blocked state (mobile parity) - MUST be after sellerId/isOwner declarations
   useEffect(() => {
@@ -380,7 +391,8 @@ export default function ListingDetail() {
 
       try {
         const result = await blocksApi.checkIfBlocked(sellerId);
-        setIsBlocked(result?.isBlocked || false);
+        // Backend returns: { success: true, data: { isBlocked: true/false }, meta: {...} }
+        setIsBlocked(result?.data?.isBlocked || false);
       } catch (err) {
         console.error("Check blocked error:", err);
         setIsBlocked(false);
@@ -589,7 +601,6 @@ export default function ListingDetail() {
         await navigator.share({
           title: listing?.title || "Cordy İlan",
           text: shareText,
-          url: canonicalListingUrl,
         });
         setShareFeedback("");
         return;
@@ -1070,6 +1081,7 @@ export default function ListingDetail() {
       {showReportModal && (
         <ReportModal
           title="İlanı Bildir"
+          reasons={LISTING_REPORT_REASONS}
           onClose={() => setShowReportModal(false)}
           onSubmit={handleSubmitListingReport}
         />
@@ -1079,6 +1091,7 @@ export default function ListingDetail() {
       {showReportUserModal && (
         <ReportModal
           title="Kullanıcıyı Bildir"
+          reasons={USER_REPORT_REASONS}
           onClose={() => setShowReportUserModal(false)}
           onSubmit={handleSubmitUserReport}
         />
@@ -1088,7 +1101,7 @@ export default function ListingDetail() {
 }
 
 // Report Modal Component (inline)
-function ReportModal({ title, onClose, onSubmit }) {
+function ReportModal({ title, reasons, onClose, onSubmit }) {
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1120,7 +1133,7 @@ function ReportModal({ title, onClose, onSubmit }) {
               required
             >
               <option value="">Seçiniz...</option>
-              {REPORT_REASONS.map((r) => (
+              {reasons.map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
                 </option>

@@ -56,6 +56,14 @@ const adminApi = {
     const res = await axiosClient.get("/admin/reports", { params });
     return res.data;
   },
+  getUserReports: async (params = {}) => {
+    const res = await axiosClient.get("/admin/reports/users", { params });
+    return res.data;
+  },
+  getListingReports: async (params = {}) => {
+    const res = await axiosClient.get("/admin/reports/listings", { params });
+    return res.data;
+  },
   exportReports: async (params = {}) => {
     const res = await axiosClient.get("/admin/reports/export", {
       params,

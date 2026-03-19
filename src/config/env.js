@@ -10,6 +10,14 @@ const isProduction = import.meta.env.MODE === 'production';
 
 // Validate and sanitize API URL
 const getApiUrl = () => {
+  // 🔒 HARD-LOCK: If running on localhost, ALWAYS use local backend
+  // This prevents accidental production API calls during local development
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('🔒 [HARD-LOCK] Running on localhost - forcing local backend');
+    return 'http://localhost:5000';
+  }
+
   const rawUrl = import.meta.env.VITE_API_URL;
 
   // Production MUST have API URL configured
@@ -69,14 +77,23 @@ export const config = {
   isProduction,
 };
 
-// Log config in development only
-if (isDevelopment) {
-  console.log('🔧 Environment Config:', {
-    mode: import.meta.env.MODE,
-    apiUrl: config.apiUrl,
-    socketUrl: config.socketUrl,
-    googleClientId: config.googleClientId ? '***configured***' : 'not configured',
-  });
+// Log config with hostname for debugging
+const hostname = typeof window !== 'undefined' ? window.location.hostname : 'unknown';
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+console.log('🚀 [CORDY] API Routing Config:', {
+  hostname: hostname,
+  isLocalhost: isLocalhost,
+  mode: import.meta.env.MODE,
+  apiUrl: config.apiUrl,
+  socketUrl: config.socketUrl,
+  googleClientId: config.googleClientId ? '***configured***' : 'not configured',
+});
+
+// Additional warning if on localhost but somehow using production API (should never happen now)
+if (isLocalhost && config.apiUrl.includes('api.usecordy.com')) {
+  console.error('❌ [CRITICAL] Running on localhost but using production API! This should not happen.');
+  console.error('   Please report this bug.');
 }
 
 // Validate in production

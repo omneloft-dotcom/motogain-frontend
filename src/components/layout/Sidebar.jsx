@@ -105,7 +105,10 @@ export default function Sidebar() {
   const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState(() =>
-    groupsConfig.reduce((acc, group) => {
+    (isAdmin
+      ? [{ titleKey: "navigation.admin", defaultOpen: true }, ...groupsConfig]
+      : groupsConfig
+    ).reduce((acc, group) => {
       acc[group.titleKey] = group.defaultOpen;
       return acc;
     }, {})
@@ -152,12 +155,6 @@ export default function Sidebar() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  if (!user) return null;
-
-  const toggleGroup = (title) => {
-    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }));
-  };
-
   // Use centralized isAdmin from AuthProvider (production-safe)
   const adminGroups = isAdmin
     ? [
@@ -181,23 +178,27 @@ export default function Sidebar() {
       ]
     : [];
 
-  useEffect(() => {
-    if (adminGroups.length) {
-      setOpenGroups((prev) => ({
-        ...prev,
-        ADMIN: prev.ADMIN ?? true,
-      }));
-    }
-  }, [adminGroups.length]);
+  if (!user) return null;
+
+  const toggleGroup = (title) => {
+    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }));
+  };
+
+  const resolvedOpenGroups =
+    isAdmin && openGroups["navigation.admin"] === undefined
+      ? { ...openGroups, ["navigation.admin"]: true }
+      : openGroups;
+
+  const navigationGroups = isAdmin ? [...adminGroups, ...groupsConfig] : groupsConfig;
 
   const sidebarContent = (
     <nav className="flex flex-col gap-4">
-      {[...groupsConfig, ...adminGroups].map((group) => (
+      {navigationGroups.map((group) => (
         <SidebarGroup
           key={group.titleKey}
           titleKey={group.titleKey}
           items={group.items}
-          isOpen={openGroups[group.titleKey]}
+          isOpen={resolvedOpenGroups[group.titleKey]}
           onToggle={() => toggleGroup(group.titleKey)}
           t={t}
         />

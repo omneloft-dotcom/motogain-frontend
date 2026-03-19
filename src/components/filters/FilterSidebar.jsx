@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { LOCKED_PARENT_CATEGORY, PARENT_CATEGORY_OPTIONS } from "../../constants/listingCategories";
 
 export default function FilterSidebar({ filters, setFilters }) {
   const [open, setOpen] = useState({
@@ -79,17 +80,22 @@ export default function FilterSidebar({ filters, setFilters }) {
 
         {open.parentCategory && (
           <div className="mt-2 flex flex-col gap-2">
-            {["Taşıtlar", "Ekipman", "Yedek Parça", "Aksesuar"].map((cat) => (
+            {PARENT_CATEGORY_OPTIONS.map((option) => (
               <div
-                key={cat}
-                onClick={() => toggleMulti("parentCategories", cat)}
-                className={`px-3 py-2 rounded cursor-pointer border ${
-                  parentCategories.includes(cat)
+                key={option.value}
+                onClick={() => {
+                  if (option.disabled) return;
+                  toggleMulti("parentCategories", option.value);
+                }}
+                className={`px-3 py-2 rounded border ${
+                  option.disabled
+                    ? "cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200"
+                    : parentCategories.includes(option.value)
                     ? "bg-gray-200 border-gray-400"
                     : "bg-gray-50 hover:bg-gray-100"
                 }`}
               >
-                {cat}
+                {option.label}
               </div>
             ))}
           </div>
@@ -149,7 +155,11 @@ export default function FilterSidebar({ filters, setFilters }) {
                 items: ["Görünüm", "Koruma", "Bakım Ürünleri", "Elektronik Aksesuar"],
               },
             ]
-              .filter((g) => parentCategories.length === 0 || parentCategories.includes(g.group))
+              .filter(
+                (g) =>
+                  g.group !== LOCKED_PARENT_CATEGORY &&
+                  (parentCategories.length === 0 || parentCategories.includes(g.group))
+              )
               .flatMap((g) => g.items)
               .map((cat) => (
                 <div

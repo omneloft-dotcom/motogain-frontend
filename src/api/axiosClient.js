@@ -145,6 +145,7 @@ axiosClient.interceptors.response.use(
             if (!originalRequest.headers) {
               originalRequest.headers = {};
             }
+            // 🔒 CRITICAL FIX: Explicitly inject new token (don't rely on interceptor)
             originalRequest.headers.Authorization = `Bearer ${token}`;
             originalRequest._retry = true;
 
@@ -218,6 +219,9 @@ axiosClient.interceptors.response.use(
         };
         localStorage.setItem("auth", JSON.stringify(updatedAuth));
 
+        // 🔒 CRITICAL FIX: Update axios default header so ALL future requests use new token
+        axiosClient.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+
         // Process queued requests with new token
         processQueue(null, accessToken);
         isRefreshing = false;
@@ -227,8 +231,8 @@ axiosClient.interceptors.response.use(
         if (!originalRequest.headers) {
           originalRequest.headers = {};
         }
+        // 🔒 CRITICAL FIX: Explicitly inject new token (don't rely on interceptor)
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        console.log("[axiosClient] Retrying with new token:", originalRequest.url);
 
         // CRITICAL FIX: Ensure request data is preserved for POST/PUT/PATCH
         // Some axios versions lose the body data on retry if it was already serialized

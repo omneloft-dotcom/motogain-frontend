@@ -15,6 +15,11 @@ import {
   PART_BRANDS,
   TIRE_BRANDS,
 } from "../../constants/brandData";
+import {
+  LOCKED_PARENT_CATEGORY,
+  PARENT_CATEGORY_OPTIONS,
+  sanitizeUnlockedParentCategory,
+} from "../../constants/listingCategories";
 
 /**
  * ListingsPage - Tüm ilanlar + Filtreleme (FAZ 15)
@@ -123,11 +128,13 @@ const parseYearInput = (v) => (v ?? "").toString().replace(/\D/g, "").slice(0, 4
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function ListingsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialParentCategory = sanitizeUnlockedParentCategory(searchParams.get("parentCategory"));
+  const initialCategory = initialParentCategory ? searchParams.get("category") || "" : "";
   const [listings, setListings] = useState([]);
   const [view, setView] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
   const [toast, setToast] = useState(null); // FAZ 18: UX polish
   // 🔄 GELİŞTİRME 3: İlan tipi tab state
   const [activeTab, setActiveTab] = useState(searchParams.get('type') || 'sale');
@@ -168,8 +175,8 @@ export default function ListingsPage() {
   const [filters, setFilters] = useState({
     q: searchParams.get("q") || "",
     city: searchParams.get("city") || "",
-    parentCategory: searchParams.get("parentCategory") || "",
-    category: searchParams.get("category") || "",
+    parentCategory: initialParentCategory,
+    category: initialCategory,
     brand: searchParams.get("brand") || "",
     model: searchParams.get("model") || "",
     yearMin: validYearMin,
@@ -445,9 +452,9 @@ export default function ListingsPage() {
               className="w-full bg-card border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:border-primary/60 transition-colors"
             >
               <option value="">Tüm Ana Kategoriler</option>
-              {Object.keys(CATEGORY_TREE).map((pc) => (
-                <option key={pc} value={pc}>
-                  {pc}
+              {PARENT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} disabled={option.disabled}>
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -465,7 +472,7 @@ export default function ListingsPage() {
               disabled={!filters.parentCategory}
             >
               <option value="">Tüm Alt Kategoriler</option>
-              {(CATEGORY_TREE[filters.parentCategory] || []).map((category) => (
+              {(filters.parentCategory === LOCKED_PARENT_CATEGORY ? [] : CATEGORY_TREE[filters.parentCategory] || []).map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>

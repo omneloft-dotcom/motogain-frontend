@@ -26,6 +26,7 @@ import {
   normalizeGender,
   normalizeSystem,
 } from "../../constants/sizeTables";
+import { PARENT_CATEGORY_OPTIONS } from "../../constants/listingCategories";
 
 // Telefon formatlama
 const formatPhone = (val) => {
@@ -805,13 +806,11 @@ const CreateListing = () => {
               }}
             >
               <option value="">Ana kategori seç</option>
-              {Object.keys(CATEGORY_TREE)
-                .filter((c) => c !== "Taşıtlar") // 🔒 Business rule: Taşıtlar locked for web
-                .map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
+              {PARENT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} disabled={option.disabled}>
+                  {option.label}
+                </option>
+              ))}
             </select>
             {errors.parentCategory && (
               <p className="text-error text-sm">{errors.parentCategory}</p>
