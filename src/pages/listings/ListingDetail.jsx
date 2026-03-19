@@ -43,8 +43,6 @@ export default function ListingDetail() {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [offerPrice, setOfferPrice] = useState("");
   const [ctaLoading, setCtaLoading] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [expandedDesc, setExpandedDesc] = useState(false);
@@ -104,49 +102,17 @@ export default function ListingDetail() {
       navigate(`/messages/${conversationId}`);
     } catch (err) {
       console.error("Mesaj başlatma hatası:", err);
-      setError("Mesaj başlatılamadı. Lütfen tekrar deneyin.");
+      // Handle blocked user scenario
+      if (err.response?.status === 403) {
+        setError("Engellediğiniz kullanıcıya mesaj gönderemezsiniz.");
+      } else {
+        setError("Mesaj başlatılamadı. Lütfen tekrar deneyin.");
+      }
     } finally {
       setCtaLoading(false);
     }
   };
 
-  const handleMakeOffer = () => {
-    setShowOfferModal(true);
-  };
-
-  const handleOfferSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!listing || !listing._id) {
-      setError("İlan bilgisi yüklenemedi. Lütfen sayfayı yenileyin.");
-      return;
-    }
-
-    try {
-      setError("");
-
-      // First, start/get conversation with the seller
-      if (!sellerId) {
-        setError("Satıcı bilgisi bulunamadı.");
-        return;
-      }
-      const { conversationId } = await conversationsApi.startConversation(listing._id, sellerId);
-
-      // Send the offer through the conversation
-      await messagesApi.sendOffer(conversationId, Number(offerPrice));
-
-      // Close modal and reset form
-      setShowOfferModal(false);
-      setOfferPrice("");
-
-      // Navigate to the conversation
-      navigate(`/messages/${conversationId}`);
-    } catch (err) {
-      console.error("Teklif gönderme hatası:", err);
-      setError("Teklif gönderilemedi. Lütfen tekrar deneyin.");
-      setShowOfferModal(false);
-    }
-  };
 
   // FAZ 16: Load Matched Couriers
   const loadMatchedCouriers = async () => {
@@ -829,17 +795,6 @@ export default function ListingDetail() {
         </section>
       </div>
 
-      {!isOwner && (
-        <div className="mt-6 flex flex-col gap-2.5 sm:max-w-sm">
-          <button
-            onClick={handleMakeOffer}
-            disabled={!isListingAvailable()}
-            className="w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 text-[15px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            💰 Teklif Ver
-          </button>
-        </div>
-      )}
 
       {/* Sticky CTA (mobile) */}
       {!isOwner && (
@@ -1032,49 +987,6 @@ export default function ListingDetail() {
             )}
           </div>
         </section>
-      )}
-
-      {showOfferModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold mb-4">Teklif Ver</h3>
-            <form onSubmit={handleOfferSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Teklif Fiyatı (₺)
-                </label>
-                <input
-                  type="number"
-                  value={offerPrice}
-                  onChange={(e) => setOfferPrice(e.target.value)}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="Teklif miktarınızı girin"
-                  required
-                  min="1"
-                  step="1"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  İlan fiyatı: {formatPriceFull(listing?.price)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowOfferModal(false)}
-                  className="flex-1 py-2 px-4 rounded-lg border-2 border-gray-200 hover:bg-gray-50"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white hover:bg-green-700"
-                >
-                  Teklif Gönder
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {/* Report Listing Modal */}
