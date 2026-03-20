@@ -11,6 +11,7 @@ export default function UsersManagement() {
   const [loading, setLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [banningUserId, setBanningUserId] = useState(null);
+  const [unbanningUserId, setUnbanningUserId] = useState(null);
   const [toast, setToast] = useState(null);
 
   const fetchUsers = async () => {
@@ -47,13 +48,20 @@ export default function UsersManagement() {
   };
 
   const handleUnban = async (userId) => {
+    if (!confirm("Bu kullanıcının yasağını kaldırmak istediğinize emin misiniz?")) {
+      return;
+    }
+
     try {
+      setUnbanningUserId(userId);
       await adminApi.unbanUser(userId);
       fetchUsers();
       setToast({ message: "Yasak başarıyla kaldırıldı", type: "success" });
     } catch (err) {
       console.error("Unban error:", err);
       setToast({ message: "Unban işlemi başarısız", type: "error" });
+    } finally {
+      setUnbanningUserId(null);
     }
   };
 
@@ -114,6 +122,7 @@ export default function UsersManagement() {
             onUnban={handleUnban}
             onRoleChange={handleRoleChange}
             banningUserId={banningUserId}
+            unbanningUserId={unbanningUserId}
             banReason={banReason}
             setBanReason={setBanReason}
             setBanningUserId={setBanningUserId}
@@ -170,8 +179,13 @@ export default function UsersManagement() {
                         Yasaklı
                       </span>
                       <div className="text-xs text-slate-500 mt-1">
-                        {user.banReason}
+                        {user.banReason || "Yasak nedeni belirtilmedi"}
                       </div>
+                      {user.bannedAt && (
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {new Date(user.bannedAt).toLocaleDateString("tr-TR")}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
@@ -193,9 +207,10 @@ export default function UsersManagement() {
                       {user.isBanned ? (
                         <button
                           onClick={() => handleUnban(user._id)}
-                          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors font-medium text-xs"
+                          disabled={unbanningUserId === user._id}
+                          className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Yasağı Kaldır
+                          {unbanningUserId === user._id ? "Kaldırılıyor..." : "Yasağı Kaldır"}
                         </button>
                       ) : (
                         <>

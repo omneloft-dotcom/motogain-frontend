@@ -1,5 +1,5 @@
 // Mobile-friendly user card component
-export default function UserCard({ user, currentUser, onBan, onUnban, onRoleChange, banningUserId, banReason, setBanReason, setBanningUserId }) {
+export default function UserCard({ user, currentUser, onBan, onUnban, onRoleChange, banningUserId, unbanningUserId, banReason, setBanReason, setBanningUserId }) {
   const isSelf = user._id === currentUser?._id;
 
   return (
@@ -29,11 +29,16 @@ export default function UserCard({ user, currentUser, onBan, onUnban, onRoleChan
       </div>
 
       {/* Ban Reason (if banned) */}
-      {user.isBanned && user.banReason && (
+      {user.isBanned && (
         <div className="bg-red-50 border-l-2 border-red-500 p-2 rounded">
           <p className="text-xs text-red-800">
-            <span className="font-semibold">Sebep:</span> {user.banReason}
+            <span className="font-semibold">Sebep:</span> {user.banReason || "Yasak nedeni belirtilmedi"}
           </p>
+          {user.bannedAt && (
+            <p className="text-xs text-red-600 mt-1">
+              {new Date(user.bannedAt).toLocaleDateString("tr-TR")}
+            </p>
+          )}
         </div>
       )}
 
@@ -53,9 +58,10 @@ export default function UserCard({ user, currentUser, onBan, onUnban, onRoleChan
           {user.isBanned ? (
             <button
               onClick={() => onUnban(user._id)}
-              className="w-full bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+              disabled={unbanningUserId === user._id}
+              className="w-full bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Yasağı Kaldır
+              {unbanningUserId === user._id ? "Kaldırılıyor..." : "Yasağı Kaldır"}
             </button>
           ) : (
             <>
