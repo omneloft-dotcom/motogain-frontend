@@ -14,7 +14,7 @@ const ChatPage = () => {
   const { t } = useTranslation();
   const { conversationId } = useParams();
   const { user } = useAuth();
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected, connectSocket } = useSocket();
 
   const [messages, setMessages] = useState([]);
   const [conversation, setConversation] = useState(null);
@@ -33,6 +33,13 @@ const ChatPage = () => {
     loadConversationAndMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
+
+  // Connect socket when entering messaging screen
+  useEffect(() => {
+    if (connectSocket) {
+      connectSocket();
+    }
+  }, [connectSocket]);
 
   // Socket.IO real-time event listeners
   useEffect(() => {

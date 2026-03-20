@@ -3,6 +3,7 @@ import authApi from "../api/authApi";
 import favoritesApi from "../api/favoritesApi";
 import notificationsApi from "../api/notificationsApi";
 import { requestPushToken } from "../services/pushClient";
+import { disconnectSocket } from "../services/socket";
 
 const AuthContext = createContext(null);
 
@@ -131,6 +132,7 @@ export default function AuthProvider({ children }) {
 
   // 🚪 LOGOUT
   const logout = () => {
+    disconnectSocket();
     localStorage.removeItem("auth");
     setToken(null);
     setUser(null);

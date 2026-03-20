@@ -11,7 +11,7 @@ import { getErrorMessage, logError } from "../../utils/errorHandler";
 export default function MessagesInbox() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { socket } = useSocket();
+  const { socket, connectSocket } = useSocket();
   const { user, loading: authLoading } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +28,11 @@ export default function MessagesInbox() {
       return;
     }
 
+    // Connect socket when entering messaging screen
+    if (connectSocket) {
+      connectSocket();
+    }
+
     loadConversations();
 
     // Polling: refresh every 15 seconds for live updates (fallback)
@@ -36,7 +41,7 @@ export default function MessagesInbox() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, [authLoading, user]);
+  }, [authLoading, user, connectSocket]);
 
   // Socket.IO real-time inbox updates
   useEffect(() => {

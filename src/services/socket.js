@@ -71,13 +71,11 @@ export const initializeSocket = (token) => {
     path: "/socket.io/",
     transports: ["websocket"],
     withCredentials: true,
+    autoConnect: false,
     auth: {
       token,
     },
-    reconnection: true,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 5000,
-    reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
+    reconnection: false,
     timeout: 10000,
   });
 
@@ -123,8 +121,23 @@ export const getSocket = () => {
   return socket;
 };
 
+export const connectSocket = (token, user) => {
+  if (!token || !user) return null;
+
+  const instance = initializeSocket(token);
+  if (!instance) return null;
+
+  if (!instance.connected) {
+    console.log("SOCKET_INIT", { userId: user?.id || user?._id, hasToken: !!token });
+    instance.connect();
+  }
+
+  return instance;
+};
+
 export const disconnectSocket = () => {
   if (socket) {
+    socket.off();
     socket.disconnect();
     socket = null;
     log("🔌 Socket disconnected manually");

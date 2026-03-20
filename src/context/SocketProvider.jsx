@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { initializeSocket, disconnectSocket, getSocket } from "../services/socket";
+import { connectSocket as connectSocketService, disconnectSocket, getSocket } from "../services/socket";
 
 const SocketContext = createContext();
 
@@ -17,39 +17,33 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (token && user) {
-      // Initialize socket with JWT token
-      const socket = initializeSocket(token);
-
-      if (socket) {
-        socket.on("connect", () => {
-          setIsConnected(true);
-        });
-
-        socket.on("disconnect", () => {
-          setIsConnected(false);
-        });
-
-        socket.on("reconnect", () => {
-          setIsConnected(true);
-        });
-      }
-
-      // Cleanup on unmount
-      return () => {
-        disconnectSocket();
-        setIsConnected(false);
-      };
-    } else {
-      // User logged out, disconnect socket
+    if (!token || !user) {
       disconnectSocket();
       setIsConnected(false);
     }
   }, [token, user]);
 
+  // Manual connect method - only call from messaging screens
+  const connectSocket = () => {
+    if (!token || !user) return null;
+
+    const socket = connectSocketService(token, user);
+    if (!socket) return null;
+
+    socket.off("connect");
+    socket.off("disconnect");
+
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
+
+    return socket;
+  };
+
   const value = {
     socket: getSocket(),
     isConnected,
+    connectSocket,
+    disconnectSocket,
   };
 
   return (

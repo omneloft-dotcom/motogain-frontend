@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthProvider";
-import { useSocket } from "../../context/SocketProvider";
 import { useEffect, useState } from "react";
 import dashboardApi from "../../api/dashboardApi";
 import { getErrorMessage, logError } from "../../utils/errorHandler";
@@ -23,7 +22,6 @@ import TargetFavoriteIcon from "../../components/icons/TargetFavoriteIcon";
 
 export default function Dashboard() {
   const { user, favorites, isAdmin } = useAuth();
-  const { socket } = useSocket();
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [showBetaNotice, setShowBetaNotice] = useState(false);
@@ -35,14 +33,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       loadSummary();
-
-      // Real-time updates from socket
-      if (socket) {
-        socket.on("inbox_update", loadSummary);
-        return () => socket.off("inbox_update", loadSummary);
-      }
     }
-  }, [user, socket]);
+  }, [user]);
 
   useEffect(() => {
     if (!isSoftLaunch) {

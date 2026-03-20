@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthProvider";
-import { useSocket } from "../../context/SocketProvider";
 import { useEffect, useState } from "react";
 import conversationsApi from "../../api/conversationsApi";
 import { Icon } from "@/ui/icons/Icon";
@@ -99,7 +98,6 @@ const navLinkClass = ({ isActive }) =>
 
 export default function Sidebar() {
   const { user, isAdmin } = useAuth();
-  const { socket } = useSocket();
   const location = useLocation();
   const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -138,17 +136,6 @@ export default function Sidebar() {
       if (interval) clearInterval(interval);
     };
   }, [user]);
-
-  useEffect(() => {
-    if (!socket) return;
-    const handleInboxUpdate = () => {
-      console.log("📬 Sidebar: Inbox update received");
-    };
-    socket.on("inbox_update", handleInboxUpdate);
-    return () => {
-      socket.off("inbox_update", handleInboxUpdate);
-    };
-  }, [socket]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
