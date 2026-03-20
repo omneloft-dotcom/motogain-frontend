@@ -75,6 +75,32 @@ const adminApi = {
     return { blob: res.data, filename };
   },
 
+  // Report moderation actions
+  reviewListingReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/listings/${reportId}/review`, payload);
+    return res.data;
+  },
+  resolveListingReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/listings/${reportId}/resolve`, payload);
+    return res.data;
+  },
+  rejectListingReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/listings/${reportId}/reject`, payload);
+    return res.data;
+  },
+  reviewUserReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/users/${reportId}/review`, payload);
+    return res.data;
+  },
+  resolveUserReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/users/${reportId}/resolve`, payload);
+    return res.data;
+  },
+  rejectUserReport: async (reportId, payload = {}) => {
+    const res = await axiosClient.put(`/admin/reports/users/${reportId}/reject`, payload);
+    return res.data;
+  },
+
   // ========================================
   // 👥 USER MANAGEMENT
   // ========================================
