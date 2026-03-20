@@ -11,50 +11,96 @@ export default function AdminDashboard() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [riskLoading, setRiskLoading] = useState(true);
+  const [openUserReportsCount, setOpenUserReportsCount] = useState(0);
+  const [openListingReportsCount, setOpenListingReportsCount] = useState(0);
+  const [reportsLoading, setReportsLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await adminApi.getReports();
-        setData(res);
-      } catch (err) {
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const loadData = async () => {
+    try {
+      const res = await adminApi.getReports();
+      setData(res);
+    } catch (err) {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    const loadRisk = async () => {
-      try {
-        setRiskLoading(true);
-        const res = await adminApi.getRiskSummary();
-        setRisk(res);
-      } catch (err) {
-        setRisk(null);
-      } finally {
-        setRiskLoading(false);
-      }
-    };
+  const loadRisk = async () => {
+    try {
+      setRiskLoading(true);
+      const res = await adminApi.getRiskSummary();
+      setRisk(res);
+    } catch (err) {
+      setRisk(null);
+    } finally {
+      setRiskLoading(false);
+    }
+  };
+
+  const loadReports = async () => {
+    try {
+      setReportsLoading(true);
+      const [userRes, listingRes] = await Promise.all([
+        adminApi.getUserReports({ status: "OPEN" }),
+        adminApi.getListingReports({ status: "OPEN" }),
+      ]);
+      setOpenUserReportsCount(userRes?.reports?.length || 0);
+      setOpenListingReportsCount(listingRes?.reports?.length || 0);
+    } catch (err) {
+      setOpenUserReportsCount(0);
+      setOpenListingReportsCount(0);
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const loadSystemStatus = async () => {
+    try {
+      const res = await adminApi.getSystemStatus();
+      setSystemStatus(res);
+    } catch (err) {
+      setSystemStatus(null);
+    }
+  };
+
+  const loadAll = () => {
+    loadData();
     loadRisk();
-  }, []);
+    loadReports();
+    loadSystemStatus();
+  };
 
   useEffect(() => {
-    const loadSystemStatus = async () => {
-      try {
-        const res = await adminApi.getSystemStatus();
-        setSystemStatus(res);
-      } catch (err) {
-        setSystemStatus(null);
-      }
-    };
-    loadSystemStatus();
+    loadAll();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadAll();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  // Combined loading state for action cards (needs both data sources)
-  const actionLoading = loading || riskLoading;
+  // Combined loading state for action cards
+  const actionLoading = loading || riskLoading || reportsLoading;
+
+  // Live status message
+  const pendingListings = data?.kpis?.pending?.value ?? 0;
+  const totalReports = openUserReportsCount + openListingReportsCount;
+  let statusMessage = "";
+  let statusColor = "";
+
+  if (pendingListings > 0) {
+    statusMessage = `🔴 ${pendingListings} ilan inceleme bekliyor`;
+    statusColor = "border-red-300 bg-red-50 text-red-900";
+  } else if (totalReports > 0) {
+    statusMessage = `⚠️ ${totalReports} yeni rapor var`;
+    statusColor = "border-amber-300 bg-amber-50 text-amber-900";
+  } else {
+    statusMessage = "✓ Sistem stabil, bekleyen işlem yok";
+    statusColor = "border-green-300 bg-green-50 text-green-900";
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -64,7 +110,14 @@ export default function AdminDashboard() {
         <p className="text-sm text-slate-600">Moderasyon ve kontrol merkezi</p>
       </div>
 
-      {/* WARNINGS / ALERTS (Conditional - Top Priority) */}
+      {/* LIVE STATUS BAR */}
+      {!actionLoading && (
+        <div className={`rounded-xl border-2 px-4 py-3 font-semibold text-sm ${statusColor}`}>
+          {statusMessage}
+        </div>
+      )}
+
+      {/* WARNINGS / ALERTS (Conditional) */}
       {data?.warnings?.length > 0 && (
         <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-amber-900 font-semibold mb-3">
@@ -89,13 +142,13 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ACIL İŞLEMLER (Primary Action Cards) */}
+      {/* ACIL İŞLEMLER (Extended - 6 Cards) */}
       <div>
         <h2 className="text-lg font-bold text-slate-900 mb-4">Acil İşlemler</h2>
         {actionLoading ? (
-          <TableSkeleton rows={1} columns={4} />
+          <TableSkeleton rows={2} columns={3} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Bekleyen İlanlar */}
             <Link
               to="/admin/pending-listings"
@@ -105,12 +158,12 @@ export default function AdminDashboard() {
                 <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
                   Bekleyen İlanlar
                 </p>
-                {(data?.kpis?.pending?.value ?? 0) > 0 && (
+                {pendingListings > 0 && (
                   <span className="text-red-500 text-lg leading-none">●</span>
                 )}
               </div>
               <p className="text-4xl font-bold text-red-900 mb-2">
-                {data?.kpis?.pending?.value ?? 0}
+                {pendingListings}
               </p>
               <p className="text-xs text-slate-600 mb-3">Onay bekleyen ilanlar</p>
               <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
@@ -121,7 +174,7 @@ export default function AdminDashboard() {
 
             {/* Yüksek Risk */}
             <Link
-              to="/admin/pending-listings"
+              to="/admin/pending-listings?riskLevel=high"
               className="block rounded-xl border-2 border-orange-200 bg-orange-50 p-5 shadow-sm transition hover:border-orange-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between mb-2">
@@ -142,9 +195,55 @@ export default function AdminDashboard() {
               </div>
             </Link>
 
+            {/* Kullanıcı Raporları */}
+            <Link
+              to="/admin/reports"
+              className="block rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  Kullanıcı Raporları
+                </p>
+                {openUserReportsCount > 0 && (
+                  <span className="text-indigo-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-indigo-900 mb-2">
+                {openUserReportsCount}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Açık kullanıcı raporu</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* İlan Raporları */}
+            <Link
+              to="/admin/reports"
+              className="block rounded-xl border-2 border-blue-200 bg-blue-50 p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  İlan Raporları
+                </p>
+                {openListingReportsCount > 0 && (
+                  <span className="text-blue-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-blue-900 mb-2">
+                {openListingReportsCount}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Açık ilan raporu</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+
             {/* Spam Sinyalli */}
             <Link
-              to="/admin/pending-listings"
+              to="/admin/pending-listings?spamRisk=true"
               className="block rounded-xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between mb-2">
@@ -167,7 +266,7 @@ export default function AdminDashboard() {
 
             {/* Fiyat Anomali */}
             <Link
-              to="/admin/pending-listings"
+              to="/admin/pending-listings?priceAnomaly=true"
               className="block rounded-xl border-2 border-purple-200 bg-purple-50 p-5 shadow-sm transition hover:border-purple-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between mb-2">
@@ -208,7 +307,7 @@ export default function AdminDashboard() {
           <TableSkeleton rows={2} columns={3} />
         ) : (
           <div className="space-y-5">
-            {/* Risk Stats Grid (removed passive "Toplam İlan") */}
+            {/* Risk Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                 <p className="text-xs uppercase text-red-600 font-semibold mb-1">Yüksek Risk</p>
@@ -226,7 +325,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Top Flags & Listings */}
+            {/* Top Problems (Top Flags & Listings) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Top Flags */}
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -245,7 +344,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="text-center py-4">
                     <span className="text-green-600 text-2xl">✓</span>
-                    <p className="text-sm text-slate-600 mt-1">İncelenecek flag bulunmuyor</p>
+                    <p className="text-sm text-slate-600 mt-1">Sorun tespit edilmedi</p>
                   </div>
                 )}
               </div>
@@ -272,7 +371,7 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="text-center py-4">
                     <span className="text-green-600 text-2xl">✓</span>
-                    <p className="text-sm text-slate-600 mt-1">Şüpheli ilan tespit edilmedi</p>
+                    <p className="text-sm text-slate-600 mt-1">Sorun tespit edilmedi</p>
                   </div>
                 )}
               </div>
@@ -290,7 +389,7 @@ export default function AdminDashboard() {
                 to="/admin/reports"
                 className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
               >
-                Kullanıcı raporları →
+                Tüm raporlar →
               </Link>
               <Link
                 to="/admin/bans"
@@ -303,7 +402,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* PLATFORM ÖZETİ (Passive Totals - Moved Lower) */}
+      {/* PLATFORM ÖZETİ */}
       <div>
         <h2 className="text-lg font-bold text-slate-900 mb-4">Platform Özeti</h2>
         {loading ? (
@@ -350,7 +449,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* SYSTEM CONFIGURATION FOOTER (Compact - Moved to Bottom) */}
+      {/* SYSTEM CONFIGURATION FOOTER */}
       {systemStatus && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">

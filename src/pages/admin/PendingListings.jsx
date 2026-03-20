@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import adminApi from "../../api/adminApi";
 
 export default function PendingListings() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -12,6 +13,37 @@ export default function PendingListings() {
     priceAnomaly: "",
     flag: "",
   });
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    const riskLevel = searchParams.get("riskLevel") || "";
+    const spamRisk = searchParams.get("spamRisk") || "";
+    const priceAnomaly = searchParams.get("priceAnomaly") || "";
+    const flag = searchParams.get("flag") || "";
+
+    setFilters({
+      riskLevel,
+      minQualityScore: "",
+      spamRisk,
+      priceAnomaly,
+      flag,
+    });
+    setInitialized(true);
+  }, []);
+
+  // Sync URL with filters (after initialization)
+  useEffect(() => {
+    if (!initialized) return;
+
+    const params = new URLSearchParams();
+    if (filters.riskLevel) params.set("riskLevel", filters.riskLevel);
+    if (filters.spamRisk) params.set("spamRisk", filters.spamRisk);
+    if (filters.priceAnomaly) params.set("priceAnomaly", filters.priceAnomaly);
+    if (filters.flag) params.set("flag", filters.flag);
+
+    setSearchParams(params, { replace: true });
+  }, [filters.riskLevel, filters.spamRisk, filters.priceAnomaly, filters.flag, initialized, setSearchParams]);
 
   const fetchListings = async () => {
     try {
@@ -19,7 +51,7 @@ export default function PendingListings() {
       if (filters.riskLevel) params.riskLevel = filters.riskLevel;
       if (filters.minQualityScore) params.minQualityScore = filters.minQualityScore;
       if (filters.spamRisk) params.spamRisk = filters.spamRisk;
-    if (filters.priceAnomaly) params.priceAnomaly = filters.priceAnomaly;
+      if (filters.priceAnomaly) params.priceAnomaly = filters.priceAnomaly;
       if (filters.flag) params.flag = filters.flag;
       const res = await adminApi.getPendingListings(params);
       setListings(res);
@@ -31,6 +63,7 @@ export default function PendingListings() {
   };
 
   useEffect(() => {
+    if (!initialized) return;
     fetchListings();
   }, [
     filters.riskLevel,
@@ -38,6 +71,7 @@ export default function PendingListings() {
     filters.spamRisk,
     filters.priceAnomaly,
     filters.flag,
+    initialized,
   ]);
 
   const handleApprove = async (id) => {
