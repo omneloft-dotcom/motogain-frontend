@@ -69,9 +69,19 @@ export default function ListingDetail() {
         setLoading(true);
         const data = await listingsApi.getListingById(id);
         setListing(data);
+        // Sync blocked state from backend response
+        if (data?.sellerBlockedByCurrentUser) {
+          setIsBlocked(true);
+        }
       } catch (err) {
-        console.error("İlan yüklenemedi:", err);
-        setError("İlan bulunamadı.");
+        console.log("LISTING_ERROR", err?.response?.status, err?.message);
+        const status = err?.response?.status;
+
+        if (status === 404) {
+          setError("NOT_FOUND");
+        } else {
+          setError("GENERIC");
+        }
       } finally {
         setLoading(false);
       }
@@ -492,7 +502,19 @@ export default function ListingDetail() {
     );
   }
 
-  if (error || !listing) {
+  if (error === "NOT_FOUND") {
+    return (
+      <div className="text-center py-20 text-gray-500">İlan bulunamadı.</div>
+    );
+  }
+
+  if (error === "GENERIC") {
+    return (
+      <div className="text-center py-20 text-gray-500">Bir hata oluştu. Lütfen tekrar deneyin.</div>
+    );
+  }
+
+  if (!listing) {
     return (
       <div className="text-center py-20 text-gray-500">İlan bulunamadı.</div>
     );
@@ -610,11 +632,22 @@ export default function ListingDetail() {
           </div>
 
           <div className="flex flex-col gap-2">
+            {!isOwner && isBlocked && (
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">🚫</span>
+                  <div className="flex-1">
+                    <p className="font-medium">Bu kullanıcıyı engellediğiniz için mesaj gönderemezsiniz.</p>
+                    <p className="mt-1 text-xs text-orange-700">Mesaj göndermek için önce engeli kaldırmanız gerekiyor.</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 sm:flex-nowrap">
               {!isOwner && (
                 <button
                   onClick={handleMessageSeller}
-                  disabled={ctaLoading || !isListingAvailable()}
+                  disabled={ctaLoading || !isListingAvailable() || isBlocked}
                   className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span>✉</span>
@@ -721,7 +754,7 @@ export default function ListingDetail() {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={handleMessageSeller}
-                disabled={ctaLoading || !isListingAvailable()}
+                disabled={ctaLoading || !isListingAvailable() || isBlocked}
                 className="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {ctaLoading ? "Gönderiliyor..." : "Mesaj Gönder"}
@@ -812,7 +845,7 @@ export default function ListingDetail() {
           </button>
           <button
             onClick={handleMessageSeller}
-            disabled={ctaLoading || !isListingAvailable()}
+            disabled={ctaLoading || !isListingAvailable() || isBlocked}
             className="flex-1 py-3 px-4 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {ctaLoading ? "Gönderiliyor..." : "Mesaj at"}
