@@ -4,23 +4,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import adminApi from "../../api/adminApi";
 import { TableSkeleton } from "../../components/common/Skeleton";
-import { isSoftLaunch } from "../../utils/isSoftLaunch";
-
-const cards = [
-  { label: "Bekleyen İlanlar", key: "pending", link: "/admin/pending-listings" },
-  { label: "Toplam Kullanıcı", key: "users", link: "/admin/users" },
-  { label: "Toplam İlan", key: "listings", link: "/admin/listings" },
-  { label: "Red Edilen", key: "rejected", link: "/admin/pending-listings?status=rejected" },
-  { label: "Yüksek Risk", key: "highRisk", link: "/admin/pending-listings?riskLevel=high" },
-];
-
-const quickActions = [
-  { label: "Bekleyen İlanlar", link: "/admin/pending-listings" },
-  { label: "Kullanıcı Yönetimi", link: "/admin/users" },
-  { label: "Haber Yönetimi", link: "/admin/news" },
-  { label: "Ban Yönetimi", link: "/admin/bans" },
-  { label: "Raporlar", link: "/admin/reports" },
-];
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -70,96 +53,33 @@ export default function AdminDashboard() {
     loadSystemStatus();
   }, []);
 
+  // Combined loading state for action cards (needs both data sources)
+  const actionLoading = loading || riskLoading;
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-          <p className="text-sm text-slate-600">Moderasyon ve kontrol özetleri</p>
-        </div>
-        {isSoftLaunch && (
-          <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
-            Soft Launch Active
-          </span>
-        )}
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
+        <p className="text-sm text-slate-600">Moderasyon ve kontrol merkezi</p>
       </div>
 
-      {loading || !data ? (
-        <TableSkeleton rows={2} columns={3} />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {cards.map((card) => (
-            <MetricCard key={card.key} card={card} kpi={data?.kpis?.[card.key]} />
-          ))}
-        </div>
-      )}
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-3">Hızlı İşlemler</h2>
-        <div className="flex flex-wrap gap-2">
-          {quickActions.map((qa) => (
-            <Link
-              key={qa.link}
-              to={qa.link}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              {qa.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {systemStatus && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-blue-900">
-              🔧 Soft Launch Sistem Durumu
-            </h2>
-            <span
-              className="text-xs text-blue-700 cursor-help"
-              title="Bu ayarlar environment üzerinden yönetilir"
-            >
-              ℹ️ Read-only
-            </span>
+      {/* WARNINGS / ALERTS (Conditional - Top Priority) */}
+      {data?.warnings?.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-amber-900 font-semibold mb-3">
+            <span className="text-lg">⚠️</span>
+            <span>Dikkat Gerektiren Durumlar</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatusBadge
-              label="Soft Launch"
-              value={systemStatus.SOFT_LAUNCH}
-            />
-            <StatusBadge
-              label="Invite Only"
-              value={systemStatus.SOFT_LAUNCH_INVITE_ONLY}
-            />
-            <StatusBadge
-              label="Rate Limiting"
-              value={systemStatus.RATE_LIMIT_ENABLED}
-            />
-            <StatusBadge
-              label="Promotions"
-              value={systemStatus.FEATURE_PROMOTIONS}
-            />
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-slate-600">Environment</span>
-              <span className="text-sm font-semibold text-slate-900">
-                {systemStatus.NODE_ENV}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {data?.warnings?.length ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm space-y-2">
-          <div className="flex items-center gap-2 text-amber-800 font-semibold">
-            <span>⚠️ Uyarılar</span>
-          </div>
-          <ul className="space-y-1 text-sm text-amber-900">
+          <ul className="space-y-2">
             {data.warnings.map((w) => (
-              <li key={w.code} className="flex items-center justify-between gap-2">
-                <span>{w.message}</span>
+              <li key={w.code} className="flex items-start justify-between gap-3 text-sm text-amber-900">
+                <span className="flex-1">{w.message}</span>
                 {w.link && (
-                  <Link className="text-indigo-700 font-semibold" to={w.link}>
+                  <Link
+                    to={w.link}
+                    className="shrink-0 whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
+                  >
                     İncele →
                   </Link>
                 )}
@@ -167,11 +87,114 @@ export default function AdminDashboard() {
             ))}
           </ul>
         </div>
-      ) : null}
+      )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Güven & Risk Özeti</h2>
+      {/* ACIL İŞLEMLER (Primary Action Cards) */}
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Acil İşlemler</h2>
+        {actionLoading ? (
+          <TableSkeleton rows={1} columns={4} />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Bekleyen İlanlar */}
+            <Link
+              to="/admin/pending-listings"
+              className="block rounded-xl border-2 border-red-200 bg-red-50 p-5 shadow-sm transition hover:border-red-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  Bekleyen İlanlar
+                </p>
+                {(data?.kpis?.pending?.value ?? 0) > 0 && (
+                  <span className="text-red-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-red-900 mb-2">
+                {data?.kpis?.pending?.value ?? 0}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Onay bekleyen ilanlar</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Yüksek Risk */}
+            <Link
+              to="/admin/pending-listings"
+              className="block rounded-xl border-2 border-orange-200 bg-orange-50 p-5 shadow-sm transition hover:border-orange-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  Yüksek Risk
+                </p>
+                {(data?.kpis?.highRisk?.value ?? 0) > 0 && (
+                  <span className="text-orange-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-orange-900 mb-2">
+                {data?.kpis?.highRisk?.value ?? 0}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Acil inceleme gerekli</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Spam Sinyalli */}
+            <Link
+              to="/admin/pending-listings"
+              className="block rounded-xl border-2 border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:border-amber-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  Spam Sinyalli
+                </p>
+                {(risk?.spamRisk ?? 0) > 0 && (
+                  <span className="text-amber-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-amber-900 mb-2">
+                {risk?.spamRisk ?? 0}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Spam şüphesi taşıyan</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+
+            {/* Fiyat Anomali */}
+            <Link
+              to="/admin/pending-listings"
+              className="block rounded-xl border-2 border-purple-200 bg-purple-50 p-5 shadow-sm transition hover:border-purple-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-xs uppercase font-bold tracking-wide text-slate-600">
+                  Fiyat Anomali
+                </p>
+                {(risk?.priceAnomaly ?? 0) > 0 && (
+                  <span className="text-purple-500 text-lg leading-none">●</span>
+                )}
+              </div>
+              <p className="text-4xl font-bold text-purple-900 mb-2">
+                {risk?.priceAnomaly ?? 0}
+              </p>
+              <p className="text-xs text-slate-600 mb-3">Anormal fiyat tespiti</p>
+              <div className="flex items-center gap-1 text-sm font-semibold text-slate-700">
+                <span>İncele</span>
+                <span>→</span>
+              </div>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* GÜVEN & RİSK ÖZETİ */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-900">Güven & Risk Özeti</h2>
           <div className="text-xs text-slate-500">
             {risk?.range?.from
               ? `${new Date(risk.range.from).toLocaleDateString("tr-TR")} - ${new Date(
@@ -180,164 +203,192 @@ export default function AdminDashboard() {
               : "Son 7 gün"}
           </div>
         </div>
+
         {riskLoading ? (
-          <TableSkeleton rows={1} columns={3} />
+          <TableSkeleton rows={2} columns={3} />
         ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Toplam İlan" value={risk?.totalListings ?? "—"} />
-              <StatCard label="Yüksek Risk" value={risk?.riskDistribution?.high ?? "—"} highlight />
-              <StatCard label="Spam Risk" value={risk?.spamRisk ?? "—"} />
-              <StatCard label="Fiyat Anomali" value={risk?.priceAnomaly ?? "—"} />
+          <div className="space-y-5">
+            {/* Risk Stats Grid (removed passive "Toplam İlan") */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <p className="text-xs uppercase text-red-600 font-semibold mb-1">Yüksek Risk</p>
+                <p className="text-2xl font-bold text-red-900">
+                  {risk?.riskDistribution?.high ?? 0}
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs uppercase text-amber-600 font-semibold mb-1">Spam Risk</p>
+                <p className="text-2xl font-bold text-amber-900">{risk?.spamRisk ?? 0}</p>
+              </div>
+              <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                <p className="text-xs uppercase text-purple-600 font-semibold mb-1">Fiyat Anomali</p>
+                <p className="text-2xl font-bold text-purple-900">{risk?.priceAnomaly ?? 0}</p>
+              </div>
             </div>
+
+            {/* Top Flags & Listings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">En Sık Flag'ler</h3>
-                {risk?.topFlags?.length ? (
-                  <ul className="space-y-1 text-sm text-slate-800">
+              {/* Top Flags */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-bold text-slate-800 mb-3">En Sık Flag'ler</h3>
+                {risk?.topFlags?.length > 0 ? (
+                  <ul className="space-y-2">
                     {risk.topFlags.map((f) => (
-                      <li key={f._id || f.code} className="flex justify-between">
-                        <span>{f._id || "-"}</span>
-                        <span className="text-slate-500">{f.count}</span>
+                      <li key={f._id || f.code} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-800 font-medium">{f._id || "—"}</span>
+                        <span className="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                          {f.count}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-600">Kayıt yok.</p>
+                  <div className="text-center py-4">
+                    <span className="text-green-600 text-2xl">✓</span>
+                    <p className="text-sm text-slate-600 mt-1">İncelenecek flag bulunmuyor</p>
+                  </div>
                 )}
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-800 mb-2">En Çok Flag Alan İlanlar</h3>
-                {risk?.topListings?.length ? (
-                  <ul className="space-y-1 text-sm text-slate-800">
+
+              {/* Top Listings */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-sm font-bold text-slate-800 mb-3">En Çok Flag Alan İlanlar</h3>
+                {risk?.topListings?.length > 0 ? (
+                  <ul className="space-y-2">
                     {risk.topListings.map((l) => (
-                      <li key={l._id} className="flex items-center justify-between gap-2">
-                        <span className="truncate">{l.title || l._id}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500">Risk: {l.riskLevel || "-"}</span>
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
-                            {l.flagsCount || 0} flag
+                      <li key={l._id} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="truncate text-slate-800 font-medium flex-1">
+                          {l.title || l._id}
+                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-xs text-slate-500">{l.riskLevel || "—"}</span>
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                            {l.flagsCount || 0}
                           </span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-slate-600">Kayıt yok.</p>
+                  <div className="text-center py-4">
+                    <span className="text-green-600 text-2xl">✓</span>
+                    <p className="text-sm text-slate-600 mt-1">Şüpheli ilan tespit edilmedi</p>
+                  </div>
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+
+            {/* Action Links */}
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-200">
               <Link
-                to="/admin/pending-listings?riskLevel=high"
-                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                to="/admin/pending-listings"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
               >
-                Yüksek riskli ilanları incele
+                Tüm bekleyen ilanlar →
               </Link>
               <Link
-                to="/admin/pending-listings?flag=SPAM_RATE_LIMIT"
-                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                to="/admin/reports"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
               >
-                Spam sinyalli ilanlar
+                Kullanıcı raporları →
               </Link>
               <Link
-                to="/admin/pending-listings?flag=PRICE_TOO_HIGH"
-                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
+                to="/admin/bans"
+                className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
               >
-                Fiyat anomalisi
+                Ban yönetimi →
               </Link>
             </div>
-          </>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-800 mb-2">En Çok Red Alan Kategoriler</h3>
-          {data?.moderation?.rejectCategories?.length ? (
-            <ul className="space-y-1 text-sm text-slate-800">
-              {data.moderation.rejectCategories.map((c) => (
-                <li key={c.category || "other"} className="flex justify-between">
-                  <span>{c.category || "Diğer"}</span>
-                  <span className="text-slate-500">{c.count}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-slate-600">Kayıt yok.</p>
-          )}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-800 mb-2">Flag Yoğunluğu (Gün)</h3>
-          {data?.risk?.flagDays?.length ? (
-            <ul className="space-y-1 text-sm text-slate-800">
-              {data.risk.flagDays.map((d) => (
-                <li key={d.day} className="flex justify-between">
-                  <span>{d.day}</span>
-                  <span className="text-slate-500">{d.flags}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-slate-600">Kayıt yok.</p>
-          )}
-        </div>
+      {/* PLATFORM ÖZETİ (Passive Totals - Moved Lower) */}
+      <div>
+        <h2 className="text-lg font-bold text-slate-900 mb-4">Platform Özeti</h2>
+        {loading ? (
+          <TableSkeleton rows={1} columns={3} />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs uppercase text-slate-500 font-semibold">Toplam Kullanıcı</p>
+              <p className="text-3xl font-bold text-slate-900 mt-2">
+                {data?.kpis?.users?.value ?? 0}
+              </p>
+              <Link
+                to="/admin/users"
+                className="inline-block mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Yönet →
+              </Link>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs uppercase text-slate-500 font-semibold">Toplam İlan</p>
+              <p className="text-3xl font-bold text-slate-900 mt-2">
+                {data?.kpis?.listings?.value ?? 0}
+              </p>
+              <Link
+                to="/admin/listings"
+                className="inline-block mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                Yönet →
+              </Link>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs uppercase text-slate-500 font-semibold">Red Edilen</p>
+              <p className="text-3xl font-bold text-slate-900 mt-2">
+                {data?.kpis?.rejected?.value ?? 0}
+              </p>
+              <Link
+                to="/admin/pending-listings"
+                className="inline-block mt-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+              >
+                İncele →
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
-}
 
-function StatusBadge({ label, value }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-slate-600">{label}</span>
-      <span
-        className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-          value
-            ? "bg-emerald-100 text-emerald-800"
-            : "bg-slate-200 text-slate-700"
-        }`}
-      >
-        {value ? "✓ Aktif" : "✗ Kapalı"}
-      </span>
-    </div>
-  );
-}
-
-function MetricCard({ card, kpi }) {
-  const delta = kpi?.delta ?? 0;
-  const isUp = delta >= 0;
-  return (
-    <div
-      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 transition"
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-xs uppercase text-slate-500 font-semibold">{card.label}</p>
-        <span
-          className={`text-xs font-semibold ${
-            isUp ? "text-emerald-600" : "text-red-600"
-          }`}
-        >
-          {isUp ? "↑" : "↓"} {Math.abs(delta)}%
-        </span>
-      </div>
-      <p className="text-2xl font-bold text-slate-900 mt-1">{kpi?.value ?? 0}</p>
-      <Link to={card.link} className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
-        İncele →
-      </Link>
-    </div>
-  );
-}
-
-function StatCard({ label, value, highlight }) {
-  return (
-    <div
-      className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${
-        highlight ? "ring-2 ring-red-200" : ""
-      }`}
-    >
-      <p className="text-xs uppercase text-slate-500 font-semibold">{label}</p>
-      <p className="text-2xl font-bold text-slate-900 mt-1">{value ?? 0}</p>
+      {/* SYSTEM CONFIGURATION FOOTER (Compact - Moved to Bottom) */}
+      {systemStatus && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <span className="font-semibold text-slate-700">Sistem Yapılandırması:</span>
+            <span className="text-slate-600">
+              Soft Launch:{" "}
+              <span className={systemStatus.SOFT_LAUNCH ? "text-green-700 font-semibold" : "text-slate-500"}>
+                {systemStatus.SOFT_LAUNCH ? "Açık" : "Kapalı"}
+              </span>
+            </span>
+            <span className="text-slate-600">
+              Invite Only:{" "}
+              <span className={systemStatus.SOFT_LAUNCH_INVITE_ONLY ? "text-green-700 font-semibold" : "text-slate-500"}>
+                {systemStatus.SOFT_LAUNCH_INVITE_ONLY ? "Açık" : "Kapalı"}
+              </span>
+            </span>
+            <span className="text-slate-600">
+              Rate Limiting:{" "}
+              <span className={systemStatus.RATE_LIMIT_ENABLED ? "text-green-700 font-semibold" : "text-slate-500"}>
+                {systemStatus.RATE_LIMIT_ENABLED ? "Açık" : "Kapalı"}
+              </span>
+            </span>
+            <span className="text-slate-600">
+              Promotions:{" "}
+              <span className={systemStatus.FEATURE_PROMOTIONS ? "text-green-700 font-semibold" : "text-slate-500"}>
+                {systemStatus.FEATURE_PROMOTIONS ? "Açık" : "Kapalı"}
+              </span>
+            </span>
+            <span className="text-slate-400">•</span>
+            <span className="text-slate-600">
+              Ortam:{" "}
+              <span className="font-semibold text-slate-800 uppercase">
+                {systemStatus.NODE_ENV}
+              </span>
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
